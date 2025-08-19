@@ -18,8 +18,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Configure axios base URL from config
-  axios.defaults.baseURL = API_CONFIG.BASE_URL;
+  // Configure axios base URL from config (without /api since it's already in BASE_URL)
+  axios.defaults.baseURL = 'http://localhost:5001';
 
   // Remove old functions that are no longer needed
   // const setAuthToken = (token) => {

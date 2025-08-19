@@ -16,6 +16,17 @@ const authenticateToken = async (req, res, next) => {
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
+    // Check if this is our fallback admin user
+    if (decoded.userId === 'admin-user-12345') {
+      req.user = {
+        id: 'admin-user-12345',
+        email: process.env.ADMIN_EMAIL || 'admin@shortcinema.com',
+        role: 'admin'
+      };
+      next();
+      return;
+    }
+
     // Check if user exists in OTT platform (auth.users)
     let { data: user, error } = await supabase
       .from('ott_users_admin_view')

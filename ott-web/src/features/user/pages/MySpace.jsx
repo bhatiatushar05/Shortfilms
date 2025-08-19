@@ -34,6 +34,7 @@ const MySpace = () => {
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isTryingDifferentAccount, setIsTryingDifferentAccount] = useState(false)
   const [userProfile, setUserProfile] = useState(null)
   const navigate = useNavigate()
 
@@ -67,17 +68,83 @@ const MySpace = () => {
   // Debug logging
   console.log('MySpace component loaded:', { isAuthed, user, watchlist, continueWatching, userProfile })
 
+  // Show loading state while fetching user profile
+  if (user && !userProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading your profile...</p>
+        </div>
+      </div>
+    )
+  }
+
   // Show suspended/restricted user message
-  if (userProfile && userProfile.status === 'suspended') {
+  // Check for suspended status as soon as we have user data
+  if (user && userProfile && userProfile.status === 'suspended') {
     const handleTryDifferentAccount = async () => {
+      console.log('🔍 Try Different Account button clicked!');
+      console.log('🔍 Current route:', window.location.pathname);
+      
+      setIsTryingDifferentAccount(true)
+      
       try {
-        // Clear session data
+        // First, sign out directly from Supabase to clear authentication state immediately
+        console.log('🔍 Signing out from Supabase...');
+        console.log('🔍 Current auth state before sign out:', { isAuthed, user: !!user });
+        
+        // Call Supabase signOut directly for immediate effect
+        const { error: signOutError } = await supabase.auth.signOut()
+        if (signOutError) {
+          console.error('❌ Supabase sign out error:', signOutError)
+        } else {
+          console.log('🔍 Supabase sign out successful');
+        }
+        
+        // Also call the hook's signOut to update local state
         await signOut()
-        // Navigate to sign-in page
-        navigate('/login')
+        console.log('🔍 Hook sign out successful');
+        
+        // Clear local storage and session data
+        try {
+          localStorage.removeItem('ott-auth');
+          sessionStorage.clear();
+          console.log('🔍 Local storage cleared');
+        } catch (error) {
+          console.log('🔍 Error clearing local storage:', error);
+        }
+        
+        // Wait a moment for the auth state to update
+        console.log('🔍 Waiting for auth state to update...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Double-check that we're signed out
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('🔍 Final auth check - session:', !!session);
+        
+        // If we still have a session, try to force clear it
+        if (session) {
+          console.log('🔍 Session still exists, attempting to force clear...');
+          try {
+            // Force clear the session by removing it from storage
+            await supabase.auth.signOut({ scope: 'global' })
+            console.log('🔍 Global sign out successful');
+          } catch (forceError) {
+            console.error('❌ Force sign out error:', forceError);
+          }
+        }
+        
+        // Navigate to login page after successful sign out
+        console.log('🔍 Navigating to /login...');
+        // Add a flag to indicate this is a suspended user trying to sign in again
+        sessionStorage.setItem('suspended-user-signin', 'true')
+        window.location.href = '/login'
+        
       } catch (error) {
-        console.error('Error signing out:', error)
-        // Fallback: force navigation to login
+        console.error('❌ Error during sign out:', error)
+        // Even if sign out fails, try to navigate to login
+        console.log('🔍 Attempting navigation despite sign out error...');
         window.location.href = '/login'
       }
     }
@@ -92,11 +159,22 @@ const MySpace = () => {
           <p className="text-gray-300 mb-6">
             Your account is currently suspended. Please contact the administrator for assistance.
           </p>
+          <p className="text-gray-400 mb-6 text-sm">
+            You can also try signing in with a different account using the button below.
+          </p>
           <button
             onClick={handleTryDifferentAccount}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+            disabled={isTryingDifferentAccount}
+            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold transition-colors"
           >
-            Try Different Account
+            {isTryingDifferentAccount ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Signing Out...</span>
+              </div>
+            ) : (
+              'Try Different Account'
+            )}
           </button>
         </div>
       </div>

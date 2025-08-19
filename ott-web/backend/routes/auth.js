@@ -16,43 +16,75 @@ router.post('/login', async (req, res, next) => {
       throw new AppError('Email and password are required', 400, 'Validation Error');
     }
 
-    // Find user in Supabase auth
-    const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    // Try Supabase auth first
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    if (authError || !user) {
+      if (!authError && user) {
+        // Check if user has admin role
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (!profileError && userProfile && userProfile.role === 'admin') {
+          // Generate JWT token
+          const token = generateToken(user.id);
+
+          res.json({
+            success: true,
+            message: 'Login successful',
+            data: {
+              user: {
+                id: user.id,
+                email: user.email,
+                role: userProfile.role
+              },
+              token,
+              expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+            }
+          });
+          return;
+        }
+      }
+    } catch (supabaseError) {
+      console.log('Supabase auth failed, trying fallback:', supabaseError.message);
+    }
+
+    // Fallback to environment variables for admin authentication
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminEmail || !adminPassword) {
+      throw new AppError('Admin credentials not configured', 500, 'Configuration Error');
+    }
+
+    // Simple admin authentication
+    if (email === adminEmail && password === adminPassword) {
+      // Generate JWT token with a fixed admin user ID
+      const adminUserId = 'admin-user-12345';
+      const token = generateToken(adminUserId);
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: {
+            id: adminUserId,
+            email: adminEmail,
+            role: 'admin'
+          },
+          token,
+          expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+        }
+      });
+    } else {
       throw new AppError('Invalid credentials', 401, 'Authentication Error');
     }
-
-    // Check if user has admin role (you'll need to add this to your auth.users table)
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !userProfile || userProfile.role !== 'admin') {
-      throw new AppError('Access denied. Admin privileges required.', 403, 'Authorization Error');
-    }
-
-    // Generate JWT token
-    const token = generateToken(user.id);
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          role: userProfile.role
-        },
-        token,
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h'
-      }
-    });
 
   } catch (error) {
     next(error);

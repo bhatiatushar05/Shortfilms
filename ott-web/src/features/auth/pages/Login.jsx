@@ -15,9 +15,19 @@ const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated, but allow suspended users to stay
   useEffect(() => {
     if (isAuthed) {
+      // Check if this is a suspended user trying to sign in again
+      const isSuspendedUserSignin = sessionStorage.getItem('suspended-user-signin')
+      
+      if (isSuspendedUserSignin) {
+        // Clear the flag and allow them to stay on login page
+        sessionStorage.removeItem('suspended-user-signin')
+        console.log('🔍 Suspended user allowed to stay on login page')
+        return
+      }
+      
       const from = location.state?.from?.pathname || '/'
       navigate(from, { replace: true })
     }

@@ -12,6 +12,7 @@ const contentRoutes = require('./routes/content');
 const userRoutes = require('./routes/users');
 const analyticsRoutes = require('./routes/analytics');
 const mediaRoutes = require('./routes/media');
+const adminControlRoutes = require('./routes/admin-control');
 const { errorHandler } = require('./middleware/errorHandler');
 const { authenticateToken } = require('./middleware/auth');
 
@@ -80,6 +81,7 @@ app.use('/api/content', authenticateToken, contentRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/analytics', authenticateToken, analyticsRoutes);
 app.use('/api/media', authenticateToken, mediaRoutes);
+app.use('/api/admin-control', authenticateToken, adminControlRoutes);
 
 // Serve uploaded files (public access, no authentication required)
 app.use('/uploads', (req, res, next) => {
