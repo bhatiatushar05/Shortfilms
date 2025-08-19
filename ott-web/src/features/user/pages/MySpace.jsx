@@ -24,20 +24,49 @@ import { useSession } from '../../../hooks/useSession'
 import { useWatchlist, useContinueWatching } from '../../../hooks/useUserFeatures'
 import { cn } from '../../../utils/cn'
 import stripeService from '../../../services/stripeService'
+import { supabase } from '../../../lib/supabase'
 
 const MySpace = () => {
-  const { isAuthed, user, signOut, userStatus } = useSession()
+  const { isAuthed, user, signOut } = useSession()
   const { data: watchlist } = useWatchlist()
   const { data: continueWatching } = useContinueWatching()
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [userProfile, setUserProfile] = useState(null)
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) return
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('status, subscription, created_at')
+          .eq('id', user.id)
+          .single()
+
+        if (error) {
+          console.error('Error fetching user profile:', error)
+          return
+        }
+
+        setUserProfile(data)
+        console.log('User profile loaded:', data)
+      } catch (err) {
+        console.error('Error in fetchUserProfile:', err)
+      }
+    }
+
+    fetchUserProfile()
+  }, [user])
 
   // Debug logging
-  console.log('MySpace component loaded:', { isAuthed, user, watchlist, continueWatching, userStatus })
+  console.log('MySpace component loaded:', { isAuthed, user, watchlist, continueWatching, userProfile })
 
   // Show suspended/restricted user message
-  if (userStatus && !userStatus.canAccess) {
+  if (userProfile && userProfile.status === 'suspended') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
@@ -46,10 +75,10 @@ const MySpace = () => {
           </div>
           <h1 className="text-2xl font-bold text-red-400 mb-4">Access Denied</h1>
           <p className="text-gray-300 mb-6">
-            Your account is currently {userStatus.status}. Please contact the administrator for assistance.
+            Your account is currently suspended. Please contact the administrator for assistance.
           </p>
           <button
-            onClick={handleLogout}
+            onClick={signOut}
             className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
           >
             Return to Home
@@ -72,11 +101,11 @@ const MySpace = () => {
     }
   }
 
-  // Mock subscription data - replace with real data from your backend
+  // Real subscription data from database
   const subscription = {
-    status: 'basic', // 'basic', 'premium', 'none'
+    status: userProfile?.subscription || 'basic',
     nextBilling: '2025-09-18',
-    planName: 'Basic Plan'
+    planName: userProfile?.subscription === 'premium' ? 'Premium Plan' : 'Basic Plan'
   }
 
   const plans = [
@@ -243,12 +272,12 @@ const MySpace = () => {
               <div className="flex items-center gap-2 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-2">
                 <div className={cn(
                   "w-2 h-2 rounded-full",
-                  userStatus?.status === 'suspended' ? 'bg-red-500' : 
-                  userStatus?.status === 'restricted' ? 'bg-yellow-500' : 'bg-green-500'
+                  userProfile?.status === 'suspended' ? 'bg-red-500' : 
+                  userProfile?.status === 'restricted' ? 'bg-yellow-500' : 'bg-green-500'
                 )}></div>
                 <span className="text-sm text-gray-300">
-                  Status: {userStatus?.status === 'suspended' ? 'Suspended' : 
-                          userStatus?.status === 'restricted' ? 'Restricted' : 'Active'}
+                  Status: {userProfile?.status === 'suspended' ? 'Suspended' : 
+                          userProfile?.status === 'restricted' ? 'Restricted' : 'Active'}
                 </span>
               </div>
               <div className="flex items-center gap-2 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-2">

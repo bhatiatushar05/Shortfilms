@@ -112,20 +112,79 @@ router.post('/ott-user/control', async (req, res, next) => {
   }
 });
 
+// Debug endpoint to check user_controls table
+router.get('/debug/user-controls/:userId', async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log('🔍 Debug: Checking user_controls for userId:', userId);
+    
+    // Check user_controls table directly
+    const { data: control, error: controlError } = await supabase
+      .from('user_controls')
+      .select('*')
+      .eq('user_id', userId);
+
+    console.log('🔍 Debug: Control query result:', { control, controlError });
+    
+    if (controlError) {
+      return res.json({ error: controlError.message, controlError });
+    }
+
+    // Check profiles table
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId);
+
+    console.log('🔍 Debug: Profile query result:', { profile, profileError });
+
+    res.json({
+      success: true,
+      debug: {
+        userId,
+        userControls: control,
+        profile: profile,
+        controlError: controlError?.message,
+        profileError: profileError?.message
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get OTT platform user control status
 router.get('/ott-user/:userId/status', async (req, res, next) => {
   try {
     const { userId } = req.params;
 
-    // Get user control status
+    // Get user control status from user_controls table
     const { data: control, error: controlError } = await supabase
       .from('user_controls')
       .select('*')
       .eq('user_id', userId)
       .single();
 
+    // Get user status from profiles table (this is where admin dashboard updates it)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    console.log('🔍 Status check - Control data:', control);
+    console.log('🔍 Status check - Profile data:', profile);
+    console.log('🔍 Status check - Control error:', controlError);
+    console.log('🔍 Status check - Profile error:', profileError);
+
     if (controlError && controlError.code !== 'PGRST116') {
-      throw controlError;
+      console.log('❌ Control error:', controlError);
+    }
+    
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.log('❌ Profile error:', profileError);
     }
 
     // Get user info from OTT platform
@@ -146,11 +205,27 @@ router.get('/ott-user/:userId/status', async (req, res, next) => {
     console.log('can_access type:', typeof control?.can_access);
     console.log('can_access !== false:', control?.can_access !== false);
 
+    // Determine status and access - prioritize profile status since that's what admin dashboard updates
+    let status = 'active';
+    let canAccess = true;
+    
+    if (profile && profile.status) {
+      status = profile.status;
+      canAccess = profile.status !== 'suspended';
+      console.log(`🔍 User ${userId}: Using profile status=${status}, canAccess=${canAccess}`);
+    } else if (control) {
+      status = control.status || 'active';
+      canAccess = control.can_access !== false;
+      console.log(`🔍 User ${userId}: Using control status=${status}, can_access=${control.can_access}, canAccess=${canAccess}`);
+    } else {
+      console.log(`🔍 User ${userId}: No status records found, using defaults`);
+    }
+
     const userStatus = {
       userId,
       email: ottUser.email,
-      status: control?.status || 'active',
-      canAccess: control?.can_access !== false,
+      status: status,
+      canAccess: canAccess,
       accessLevel: control?.access_level || 'full',
       suspendedAt: control?.suspended_at,
       suspensionReason: control?.suspension_reason,
