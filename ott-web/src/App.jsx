@@ -6,13 +6,13 @@ import { supabase } from './lib/supabase';
 function SuspendedAccount() {
   const navigate = useNavigate();
 
-  const handleReturnHome = () => {
+  const handleTryDifferentAccount = () => {
     // Clear any stored session data
     localStorage.removeItem('ott-auth');
     sessionStorage.clear();
     
-    // Navigate to home
-    navigate('/');
+    // Navigate to sign-in page
+    navigate('/login');
   };
 
   return (
@@ -31,10 +31,10 @@ function SuspendedAccount() {
           </p>
           
           <button
-            onClick={handleReturnHome}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+            onClick={handleTryDifferentAccount}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
           >
-            Return to Home
+            Try Different Account
           </button>
         </div>
       </div>

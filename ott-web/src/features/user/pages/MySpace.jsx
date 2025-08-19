@@ -69,16 +69,16 @@ const MySpace = () => {
 
   // Show suspended/restricted user message
   if (userProfile && userProfile.status === 'suspended') {
-    const handleReturnHome = async () => {
+    const handleTryDifferentAccount = async () => {
       try {
         // Clear session data
         await signOut()
-        // Navigate to home page
-        navigate('/')
+        // Navigate to sign-in page
+        navigate('/login')
       } catch (error) {
-        console.error('Error returning home:', error)
-        // Fallback: force navigation
-        window.location.href = '/'
+        console.error('Error signing out:', error)
+        // Fallback: force navigation to login
+        window.location.href = '/login'
       }
     }
 
@@ -93,10 +93,10 @@ const MySpace = () => {
             Your account is currently suspended. Please contact the administrator for assistance.
           </p>
           <button
-            onClick={handleReturnHome}
-            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+            onClick={handleTryDifferentAccount}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
           >
-            Return to Home
+            Try Different Account
           </button>
         </div>
       </div>
