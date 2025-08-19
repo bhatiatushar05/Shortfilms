@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    height: 100%;
+    overflow-x: hidden;
+  }
+  
+  body {
+    @apply bg-black text-white antialiased;
+    height: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  #root {
+    height: 100%;
+    position: relative;
+  }
+
+  /* Ensure consistent sizing */
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  /* Glassy button styles with black and red mix theme */
+  .btn-primary {
+    @apply bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 shadow-glow hover:shadow-glow-lg hover:scale-105 backdrop-blur-md;
+  }
+  
+  .btn-secondary {
+    @apply bg-black/60 hover:bg-black/80 text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 border border-red-800/30 hover:border-red-700/50 backdrop-blur-md hover:scale-105;
+  }
+  
+  .btn-ghost {
+    @apply bg-black/40 hover:bg-black/60 text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 border border-red-800/30 hover:border-red-700/50 backdrop-blur-md hover:scale-105;
+  }
+  
+  .btn-accent {
+    @apply bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 shadow-glow-accent hover:shadow-glow-accent-lg hover:scale-105 backdrop-blur-md;
+  }
+  
+  /* Glassy card styles with black and red mix theme */
+  .card-glass {
+    @apply bg-black/40 border border-red-800/30 rounded-2xl backdrop-blur-md transition-all duration-300 hover:bg-black/60 hover:border-red-700/50 hover:scale-105;
+  }
+  
+  .card-dark {
+    @apply bg-black/80 border border-red-800/30 rounded-2xl backdrop-blur-md shadow-card;
+  }
+  
+  /* Dark navigation styles with glass effect */
+  .nav-glass {
+    @apply bg-black/60 backdrop-blur-md border border-red-800/30;
+  }
+  
+  .nav-glass-hover {
+    @apply hover:bg-black/80 hover:border-red-700/50 transition-all duration-300;
+  }
+  
+  /* Utility classes */
+  .page-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .glass-overlay {
+    @apply bg-black/40 backdrop-blur-md border border-red-800/30;
+  }
+  
+  .glass-overlay-hover {
+    @apply hover:bg-black/60 hover:border-red-700/50 transition-all duration-300;
+  }
+  
+  /* Video player slider styles */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  
+  .slider::-webkit-slider-track {
+    background: #374151;
+    height: 8px;
+    border-radius: 4px;
+  }
+  
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #ef4444;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .slider::-webkit-slider-thumb:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+  }
+  
+  .slider::-moz-range-track {
+    background: #374151;
+    height: 8px;
+    border-radius: 4px;
+    border: none;
+  }
+  
+  .slider::-moz-range-thumb {
+    background: #ef4444;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+  }
+  
+  .slider::-moz-range-thumb:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+  }
+}
+
+@layer utilities {
+  /* Z-index utilities */
+  .z-header {
+    z-index: 1000;
+  }
+  
+  .z-modal {
+    z-index: 2000;
+  }
+  
+  .z-tooltip {
+    z-index: 3000;
+  }
+  
+  /* Background patterns */
+  .bg-hero-overlay {
+    background-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.9) 100%);
+  }
+  
+  .bg-sidebar-pattern {
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(220, 38, 38, 0.02) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(0, 0, 0, 0.02) 0%, transparent 50%);
+  }
+  
+  /* Shadow utilities */
+  .shadow-card-hover {
+    box-shadow: 0 8px 30px rgba(220, 38, 38, 0.4);
+  }
+  
+  .shadow-glass {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Text utilities */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-accent {
+    @apply bg-gradient-to-r from-red-300 to-red-500 bg-clip-text text-transparent;
+  }
+  
+  /* Animation utilities */
+  .animate-stagger-1 { animation-delay: 0.1s; }
+  .animate-stagger-2 { animation-delay: 0.2s; }
+  .animate-stagger-3 { animation-delay: 0.3s; }
+  .animate-stagger-4 { animation-delay: 0.4s; }
+  .animate-stagger-5 { animation-delay: 0.5s; }
+  
+  /* Custom animations */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+}
