@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
   User, 
@@ -34,6 +35,7 @@ const MySpace = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [userProfile, setUserProfile] = useState(null)
+  const navigate = useNavigate()
 
   // Fetch user profile data
   useEffect(() => {
@@ -67,6 +69,19 @@ const MySpace = () => {
 
   // Show suspended/restricted user message
   if (userProfile && userProfile.status === 'suspended') {
+    const handleReturnHome = async () => {
+      try {
+        // Clear session data
+        await signOut()
+        // Navigate to home page
+        navigate('/')
+      } catch (error) {
+        console.error('Error returning home:', error)
+        // Fallback: force navigation
+        window.location.href = '/'
+      }
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
@@ -78,7 +93,7 @@ const MySpace = () => {
             Your account is currently suspended. Please contact the administrator for assistance.
           </p>
           <button
-            onClick={signOut}
+            onClick={handleReturnHome}
             className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
           >
             Return to Home
