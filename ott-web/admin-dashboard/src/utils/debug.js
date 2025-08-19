@@ -24,7 +24,7 @@ export const debug = {
   // Test API connectivity
   testApiConnection: async () => {
     try {
-      const response = await fetch('http://localhost:5001/health');
+      const response = await fetch('https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/health');
       const data = await response.json();
       console.log('✅ Backend health check passed:', data);
       return true;
@@ -37,9 +37,9 @@ export const debug = {
   // Test API endpoints
   testApiEndpoints: async () => {
     const endpoints = [
-      'http://localhost:5001/api/users',
-      'http://localhost:5001/api/analytics/overview',
-      'http://localhost:5001/api/content/titles'
+              'https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api/users',
+        'https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api/analytics/overview',
+        'https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api/content/titles'
     ];
 
     for (const endpoint of endpoints) {

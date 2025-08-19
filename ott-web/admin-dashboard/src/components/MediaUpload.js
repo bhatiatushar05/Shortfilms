@@ -582,7 +582,7 @@ const MediaUpload = () => {
           <Box sx={{ textAlign: 'center', py: 4 }}>
             {previewDialog.file?.poster_url ? (
               <img
-                src={`http://localhost:5001${previewDialog.file.poster_url}`}
+                src={`https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app${previewDialog.file.poster_url}`}
                 alt={previewDialog.file.title}
                 style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain' }}
               />

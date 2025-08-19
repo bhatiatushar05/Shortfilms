@@ -38,11 +38,12 @@ app.use(helmet({
   }
 }));
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-project-name.vercel.app', 'https://your-custom-domain.com'] 
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8000'],
+  origin: true, // Allow ALL origins in production
   credentials: true
 }));
+
+// Handle CORS preflight requests
+app.options('*', cors());
 
 // Rate limiting
 const limiter = rateLimit({

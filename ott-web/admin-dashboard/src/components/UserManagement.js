@@ -230,7 +230,7 @@ const UserManagement = () => {
       console.log('📤 Request payload:', { userId: id, action: newStatus === 'active' ? 'activate' : 'suspend' });
       
       // Use the new admin control API that affects OTT platform
-      const response = await axios.post('http://localhost:5001/api/admin-control/ott-user/control', {
+      const response = await axios.post('https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api/admin-control/ott-user/control', {
         userId: id,
         action: newStatus === 'active' ? 'activate' : 'suspend',
         reason: newStatus === 'suspended' ? 'Suspended by admin' : 'Activated by admin'
@@ -257,7 +257,7 @@ const UserManagement = () => {
       console.log('🔄 Changing user subscription:', { userId, newSubscription });
       setLoading(true);
       
-      const response = await axios.post('http://localhost:5001/api/admin-control/ott-user/subscription', {
+      const response = await axios.post('https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api/admin-control/ott-user/subscription', {
         userId,
         subscription: newSubscription,
         planDetails: {

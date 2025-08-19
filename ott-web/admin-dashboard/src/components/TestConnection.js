@@ -28,7 +28,7 @@ const TestConnection = () => {
 
     // Test 1: Health endpoint
     try {
-      const healthResponse = await fetch('http://localhost:5001/health');
+      const healthResponse = await fetch('https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/health');
       const healthData = await healthResponse.json();
       newTests.push({
         name: 'Backend Health Check',

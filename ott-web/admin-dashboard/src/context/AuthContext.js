@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState('');
 
   // Configure axios base URL from config (without /api since it's already in BASE_URL)
-  axios.defaults.baseURL = 'http://localhost:5001';
+  axios.defaults.baseURL = 'https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app';
 
   // Remove old functions that are no longer needed
   // const setAuthToken = (token) => {

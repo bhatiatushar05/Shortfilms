@@ -1,7 +1,7 @@
-// API Configuration
+// Production API Configuration
 export const API_CONFIG = {
-  // Backend API base URL
-  BASE_URL: 'https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api',
+  // Backend API base URL - UPDATE THIS WITH YOUR VERCEL BACKEND URL
+  BASE_URL: process.env.REACT_APP_API_URL || 'https://your-backend-url.vercel.app/api',
   
   // API endpoints
   ENDPOINTS: {
