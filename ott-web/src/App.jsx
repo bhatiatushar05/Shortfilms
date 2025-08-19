@@ -1,27 +1,23 @@
-import { BrowserRouter as Router } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import Routes from './app/routes'
-
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    },
-  },
-})
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import AppProviders from './app/AppProviders';
+import AppRoutes from './app/routes';
 
 function App() {
+  console.log('App component loading...'); // Debug log
+  console.log('Environment check:', {
+    NODE_ENV: import.meta.env.NODE_ENV,
+    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+    hasAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
+  });
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes />
-        <ReactQueryDevtools initialIsOpen={false} />
-      </Router>
-    </QueryClientProvider>
-  )
+    <Router>
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>
+    </Router>
+  );
 }
 
-export default App
+export default App;
