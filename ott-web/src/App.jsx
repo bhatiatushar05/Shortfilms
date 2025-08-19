@@ -1,55 +1,116 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 
-function App() {
-  useEffect(() => {
-    // Debug: Test Supabase connection
-    console.log('🔍 Debug: Testing Supabase connection...');
-    console.log('Environment variables:', {
-      VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-      hasAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-      anonKeyLength: import.meta.env.VITE_SUPABASE_ANON_KEY?.length
-    });
+// Suspended Account Component
+function SuspendedAccount() {
+  const navigate = useNavigate();
 
-    // Test Supabase connection
-    const testConnection = async () => {
+  const handleReturnHome = () => {
+    // Clear any stored session data
+    localStorage.removeItem('ott-auth');
+    sessionStorage.clear();
+    
+    // Navigate to home
+    navigate('/');
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full text-center">
+        <div className="bg-dark-800/50 backdrop-blur-sm rounded-2xl p-8 border border-dark-700">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          
+          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <p className="text-gray-300 mb-6">
+            Your account is currently suspended. Please contact the administrator for assistance.
+          </p>
+          
+          <button
+            onClick={handleReturnHome}
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+          >
+            Return to Home
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main App Component
+function App() {
+  const [isSuspended, setIsSuspended] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is suspended
+    const checkSuspension = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('❌ Supabase connection error:', error);
-        } else {
-          console.log('✅ Supabase connected successfully');
-          console.log('Session data:', data);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // Check user profile for suspension status
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('status')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile?.status === 'suspended') {
+            setIsSuspended(true);
+          }
         }
-      } catch (err) {
-        console.error('❌ Supabase connection failed:', err);
+      } catch (error) {
+        console.log('No active session or error checking profile');
+      } finally {
+        setLoading(false);
       }
     };
 
-    testConnection();
+    checkSuspension();
   }, []);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  if (isSuspended) {
+    return <SuspendedAccount />;
+  }
+
   return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">ShortCinema</h1>
-          <p className="text-gray-400 mb-6">Check browser console for debug info</p>
-          
-          <div className="bg-dark-800/50 backdrop-blur-sm rounded-2xl p-6 border border-dark-700">
-            <h2 className="text-xl font-semibold text-white mb-4">Debug Mode</h2>
-            <p className="text-gray-300 text-sm">
-              Open Developer Tools (F12) and check the Console tab for connection status.
-            </p>
-            <p className="text-gray-400 text-xs mt-2">
-              If you see errors, please share them so I can help fix the issue.
-            </p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full text-center">
+        <h1 className="text-3xl font-bold text-white mb-4">ShortCinema</h1>
+        <p className="text-gray-400 mb-6">Welcome to ShortCinema</p>
+        
+        <div className="bg-dark-800/50 backdrop-blur-sm rounded-2xl p-6 border border-dark-700">
+          <h2 className="text-xl font-semibold text-white mb-4">Account Status</h2>
+          <p className="text-gray-300 text-sm">
+            Your account is active and ready to use.
+          </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Wrapper with Router
+function AppWrapper() {
+  return (
+    <Router>
+      <App />
     </Router>
   );
 }
 
-export default App;
+export default AppWrapper;
