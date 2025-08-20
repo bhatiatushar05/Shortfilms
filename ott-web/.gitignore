@@ -33,3 +33,4 @@ ott-web/backend/uploads/
 *.jpeg
 *.png
 *.gif
+.vercel

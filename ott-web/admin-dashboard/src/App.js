@@ -27,8 +27,8 @@ const darkTheme = createTheme({
       dark: '#7f1d1d', // Red-900
     },
     background: {
-      default: '#000000', // Pure black
-      paper: '#0f0f0f', // Very dark gray
+      default: '#0f0f0f', // Dark gray instead of pure black
+      paper: '#1a1a1a', // Slightly lighter dark gray
     },
     text: {
       primary: '#ffffff',
@@ -46,29 +46,54 @@ const darkTheme = createTheme({
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h2: {
+      fontWeight: 700,
+      letterSpacing: '-0.02em',
+    },
+    h3: {
+      fontWeight: 700,
+      letterSpacing: '-0.02em',
+    },
     h4: {
       fontWeight: 700,
+      letterSpacing: '-0.01em',
     },
     h6: {
       fontWeight: 600,
+      letterSpacing: '0.01em',
     },
+    body1: {
+      letterSpacing: '0.01em',
+    },
+    body2: {
+      letterSpacing: '0.01em',
+    },
+  },
+  shape: {
+    borderRadius: 12,
   },
   components: {
     MuiCard: {
       styleOverrides: {
         root: {
-          background: 'linear-gradient(135deg, rgba(220,38,38,0.05) 0%, rgba(0,0,0,0.8) 100%)',
+          background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%)',
           border: '1px solid rgba(220,38,38,0.2)',
-          boxShadow: '0 8px 32px rgba(220,38,38,0.1)',
+          boxShadow: '0 4px 20px rgba(220,38,38,0.15)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 30px rgba(220,38,38,0.25)',
+          },
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          background: 'linear-gradient(135deg, rgba(220,38,38,0.05) 0%, rgba(0,0,0,0.8) 100%)',
+          background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%)',
           border: '1px solid rgba(220,38,38,0.2)',
-          boxShadow: '0 8px 32px rgba(220,38,38,0.1)',
+          boxShadow: '0 4px 20px rgba(220,38,38,0.15)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         },
       },
     },
@@ -78,12 +103,77 @@ const darkTheme = createTheme({
           borderRadius: '8px',
           textTransform: 'none',
           fontWeight: 600,
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-1px)',
+          },
         },
         containedPrimary: {
           background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+          boxShadow: '0 4px 16px rgba(220,38,38,0.3)',
           '&:hover': {
             background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)',
+            boxShadow: '0 6px 20px rgba(220,38,38,0.4)',
           },
+        },
+        outlined: {
+          borderWidth: '2px',
+          '&:hover': {
+            borderWidth: '2px',
+          },
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'scale(1.05)',
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: 600,
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-1px)',
+          },
+        },
+      },
+    },
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          borderRadius: 4,
+          backgroundColor: 'rgba(255,255,255,0.1)',
+        },
+        bar: {
+          borderRadius: 4,
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         },
       },
     },

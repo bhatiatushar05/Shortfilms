@@ -4,10 +4,11 @@ import { Search, Menu, Bell, Settings, Globe, Sun, Moon, LogOut, User, Heart } f
 import { useLocation, Link } from 'react-router-dom'
 import { useSession } from '../../hooks/useSession'
 import { useNavigationStore } from '../../store/navigationStore'
+import { supabase } from '../../lib/supabase'
 
 const TopNav = () => {
   const location = useLocation()
-  const { isAuthed, user } = useSession()
+  const { isAuthed, user, signOut } = useSession()
   const {
     isSearchOpen,
     openSearch,
@@ -42,8 +43,86 @@ const TopNav = () => {
   }, [location.pathname])
 
   const handleSignOut = async () => {
-    // TODO: Implement sign out logic
-    console.log('Sign out clicked')
+    try {
+      console.log('🔍 Sign out initiated')
+      console.log('🔍 Current auth state:', { isAuthed, user: !!user })
+      
+      // Close profile menu first
+      if (isProfileMenuOpen) {
+        toggleProfileMenu()
+      }
+      
+      // Comprehensive storage cleanup before sign out
+      try {
+        // Clear custom storage key
+        localStorage.removeItem('ott-auth')
+        // Clear all Supabase-related storage
+        localStorage.removeItem('supabase.auth.token')
+        localStorage.removeItem('supabase.auth.expires_at')
+        localStorage.removeItem('supabase.auth.refresh_token')
+        localStorage.removeItem('supabase.auth.access_token')
+        // Clear session storage
+        sessionStorage.clear()
+        // Clear any other potential auth storage
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase') || key.includes('auth') || key.includes('ott')) {
+            localStorage.removeItem(key)
+          }
+        })
+        console.log('🔍 Comprehensive storage cleanup completed')
+      } catch (storageError) {
+        console.warn('Failed to clear storage:', storageError)
+      }
+      
+      // Check current session before sign out
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log('🔍 Current session before sign out:', !!session)
+      
+      // Perform sign out using the signOut function from useSession
+      console.log('🔍 Calling useSession signOut...')
+      await signOut()
+      console.log('🔍 useSession signOut completed')
+      
+      // Force clear any remaining Supabase session with multiple approaches
+      try {
+        console.log('🔍 Force clearing Supabase session...')
+        // Try global sign out
+        await supabase.auth.signOut({ scope: 'global' })
+        // Try local sign out again
+        await supabase.auth.signOut()
+        console.log('🔍 Force sign out completed')
+      } catch (forceError) {
+        console.warn('Force sign out failed:', forceError)
+      }
+      
+      // Final storage cleanup after sign out
+      try {
+        localStorage.removeItem('ott-auth')
+        sessionStorage.clear()
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase') || key.includes('auth') || key.includes('ott')) {
+            localStorage.removeItem(key)
+          }
+        })
+        console.log('🔍 Final storage cleanup completed')
+      } catch (finalCleanupError) {
+        console.warn('Final cleanup failed:', finalCleanupError)
+      }
+      
+      // Check session after sign out
+      const { data: { session: afterSession } } = await supabase.auth.getSession()
+      console.log('🔍 Session after sign out:', !!afterSession)
+      
+      // Force page reload to clear any remaining state
+      console.log('🔍 Force reloading page to clear state...')
+      window.location.reload()
+      
+    } catch (error) {
+      console.error('❌ Sign out failed:', error)
+      // Even if sign out fails, try to force reload
+      console.log('🔍 Attempting force reload despite error...')
+      window.location.reload()
+    }
   }
 
   const getInitials = (name) => {

@@ -16,6 +16,9 @@ import {
   Menu,
   MenuItem,
   useTheme,
+  useMediaQuery,
+  Badge,
+  Tooltip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -29,10 +32,14 @@ import {
   Settings as SettingsIcon,
   AccountCircle as AccountIcon,
   Logout as LogoutIcon,
+  Notifications as NotificationsIcon,
+  Search as SearchIcon,
+  Message as MessageIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
 const drawerWidth = 280;
+const mobileDrawerWidth = 240;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, action: 'dashboard' },
@@ -52,6 +59,7 @@ const Layout = ({ children, onNavigate, onLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const { user, logout } = useAuth();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -77,75 +85,102 @@ const Layout = ({ children, onNavigate, onLogout }) => {
     setActiveSection(action);
     if (onNavigate) {
       onNavigate(action);
-    } else {
-      // For now, show an alert. Later this will navigate to different components
-      alert(`Navigation: ${action} - This feature will be implemented next!`);
+    }
+    if (isMobile) {
+      setMobileOpen(false);
     }
   };
 
   const drawer = (
-    <Box>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Logo Section */}
       <Box
         sx={{
           p: 3,
           textAlign: 'center',
           background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
           color: 'white',
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 2px 10px rgba(220,38,38,0.3)',
         }}
       >
-        <MovieIcon sx={{ fontSize: 40, mb: 1 }} />
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        <MovieIcon sx={{ fontSize: 40, mb: 1, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: '0.5px' }}>
           ShortCinema
         </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+        <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
           Admin Portal
         </Typography>
       </Box>
       
-      <Divider />
+      <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
       
-      <List sx={{ pt: 2 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              onClick={() => handleNavigation(item.action)}
-              sx={{
-                mx: 1,
-                borderRadius: 2,
-                mb: 0.5,
-                backgroundColor: activeSection === item.action ? 'rgba(220, 38, 38, 0.2)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(220, 38, 38, 0.1)',
-                },
-              }}
-            >
-              <ListItemIcon sx={{ color: '#dc2626', minWidth: 40 }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.text} 
-                primaryTypographyProps={{ fontSize: '0.9rem' }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
+      {/* Navigation Menu */}
+      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <List sx={{ pt: 2, pb: 2 }}>
+          {menuItems.map((item) => (
+            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                onClick={() => handleNavigation(item.action)}
+                sx={{
+                  mx: 1,
+                  borderRadius: 2,
+                  minHeight: 48,
+                  backgroundColor: activeSection === item.action ? 'rgba(220, 38, 38, 0.2)' : 'transparent',
+                  border: activeSection === item.action ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid transparent',
+                  '&:hover': {
+                    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                    borderColor: 'rgba(220, 38, 38, 0.2)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ListItemIcon sx={{ 
+                  color: activeSection === item.action ? '#dc2626' : 'rgba(255,255,255,0.7)', 
+                  minWidth: 40,
+                  transition: 'color 0.2s ease',
+                }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText 
+                  primary={item.text} 
+                  primaryTypographyProps={{ 
+                    fontSize: '0.9rem',
+                    fontWeight: activeSection === item.action ? 600 : 400,
+                    color: activeSection === item.action ? 'white' : 'rgba(255,255,255,0.9)',
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+
+      {/* Footer Section */}
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', display: 'block' }}>
+          v1.0.0 • Admin Portal
+        </Typography>
+      </Box>
     </Box>
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+          <Box sx={{ display: 'flex', minHeight: '100vh', background: '#0f0f0f' }}>
+      {/* Top App Bar */}
       <AppBar
         position="fixed"
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
           background: 'rgba(0, 0, 0, 0.95)',
-          backdropFilter: 'blur(10px)',
+          backdropFilter: 'blur(20px)',
           borderBottom: '1px solid rgba(220, 38, 38, 0.3)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          zIndex: theme.zIndex.drawer + 1,
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: 64 }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -156,30 +191,71 @@ const Layout = ({ children, onNavigate, onLogout }) => {
             <MenuIcon />
           </IconButton>
           
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
             ShortCinema Admin
           </Typography>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              {user?.email}
-            </Typography>
-            <IconButton
-              onClick={handleProfileMenuOpen}
-              sx={{ color: 'inherit' }}
-            >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: '#dc2626' }}>
-                <AccountIcon />
-              </Avatar>
-            </IconButton>
+          {/* Search Bar */}
+          <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', mr: 2 }}>
+            <Tooltip title="Search">
+              <IconButton sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                <SearchIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          
+          {/* Right Side Icons */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Messages */}
+            <Tooltip title="Messages">
+              <IconButton sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                <Badge badgeContent={3} color="error">
+                  <MessageIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+            
+            {/* Notifications */}
+            <Tooltip title="Notifications">
+              <IconButton sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                <Badge badgeContent={7} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+            
+            {/* User Profile */}
+            <Tooltip title="User Profile">
+              <IconButton
+                onClick={handleProfileMenuOpen}
+                sx={{ 
+                  color: 'inherit',
+                  ml: 1,
+                  '&:hover': {
+                    backgroundColor: 'rgba(220,38,38,0.1)',
+                  }
+                }}
+              >
+                <Avatar sx={{ 
+                  width: 36, 
+                  height: 36, 
+                  bgcolor: '#dc2626',
+                  border: '2px solid rgba(220,38,38,0.3)',
+                }}>
+                  <AccountIcon />
+                </Avatar>
+              </IconButton>
+            </Tooltip>
           </Box>
         </Toolbar>
       </AppBar>
 
+      {/* Sidebar Navigation */}
       <Box
         component="nav"
         sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
       >
+        {/* Mobile Drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -189,13 +265,17 @@ const Layout = ({ children, onNavigate, onLogout }) => {
             display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
-              width: drawerWidth,
+              width: mobileDrawerWidth,
               background: 'linear-gradient(180deg, #000000 0%, #0f0f0f 100%)',
+              borderRight: '1px solid rgba(220, 38, 38, 0.3)',
+              boxShadow: '4px 0 20px rgba(0,0,0,0.5)',
             },
           }}
         >
           {drawer}
         </Drawer>
+        
+        {/* Desktop Drawer */}
         <Drawer
           variant="permanent"
           sx={{
@@ -205,6 +285,7 @@ const Layout = ({ children, onNavigate, onLogout }) => {
               width: drawerWidth,
               background: 'linear-gradient(180deg, #000000 0%, #0f0f0f 100%)',
               borderRight: '1px solid rgba(220, 38, 38, 0.3)',
+              boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
             },
           }}
           open
@@ -213,18 +294,21 @@ const Layout = ({ children, onNavigate, onLogout }) => {
         </Drawer>
       </Box>
 
+      {/* Main Content Area */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
           width: { md: `calc(100% - ${drawerWidth}px)` },
           mt: '64px',
+          minHeight: 'calc(100vh - 64px)',
+          background: '#0f0f0f',
         }}
       >
         {children}
       </Box>
 
+      {/* Profile Menu */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -232,22 +316,28 @@ const Layout = ({ children, onNavigate, onLogout }) => {
         PaperProps={{
           sx: {
             background: 'rgba(0, 0, 0, 0.95)',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(20px)',
             border: '1px solid rgba(220, 38, 38, 0.3)',
+            borderRadius: 2,
+            mt: 1,
+            minWidth: 200,
           },
         }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem onClick={handleProfileMenuClose}>
+        <MenuItem onClick={handleProfileMenuClose} sx={{ py: 1.5 }}>
           <ListItemIcon>
-            <AccountIcon fontSize="small" />
+            <AccountIcon fontSize="small" sx={{ color: '#dc2626' }} />
           </ListItemIcon>
-          Profile
+          <Typography variant="body2">Profile</Typography>
         </MenuItem>
-        <MenuItem onClick={handleLogout}>
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+        <MenuItem onClick={handleLogout} sx={{ py: 1.5 }}>
           <ListItemIcon>
-            <LogoutIcon fontSize="small" />
+            <LogoutIcon fontSize="small" sx={{ color: '#dc2626' }} />
           </ListItemIcon>
-          Logout
+          <Typography variant="body2">Logout</Typography>
         </MenuItem>
       </Menu>
     </Box>
