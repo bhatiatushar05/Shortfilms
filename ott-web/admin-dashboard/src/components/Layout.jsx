@@ -1,4 +1,10 @@
 import React, { useState } from 'react';
+import Dashboard from './Dashboard';
+import ContentManagement from './ContentManagement';
+import UserManagement from './UserManagement';
+import Analytics from './Analytics';
+import MediaUpload from './MediaUpload';
+import TestConnection from './TestConnection';
 import {
   Box,
   Drawer,
@@ -88,6 +94,58 @@ const Layout = ({ children, onNavigate, onLogout }) => {
     }
     if (isMobile) {
       setMobileOpen(false);
+    }
+  };
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'content':
+        return <ContentManagement />;
+      case 'users':
+        return <UserManagement />;
+      case 'analytics':
+        return <Analytics />;
+      case 'media':
+        return <MediaUpload />;
+      case 'drm':
+        return (
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>
+              DRM & Security
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              DRM and security features will be implemented here.
+            </Typography>
+          </Box>
+        );
+      case 'monetization':
+        return (
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>
+              Monetization
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Monetization features will be implemented here.
+            </Typography>
+          </Box>
+        );
+      case 'settings':
+        return (
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>
+              Settings
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Settings and configuration will be implemented here.
+            </Typography>
+          </Box>
+        );
+      case 'test':
+        return <TestConnection />;
+      default:
+        return <Dashboard />;
     }
   };
 
@@ -305,7 +363,7 @@ const Layout = ({ children, onNavigate, onLogout }) => {
           background: '#0f0f0f',
         }}
       >
-        {children}
+        {renderContent()}
       </Box>
 
       {/* Profile Menu */}

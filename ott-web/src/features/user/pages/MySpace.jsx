@@ -372,312 +372,218 @@ const MySpace = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white overflow-hidden">
-      {/* Header Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 via-transparent to-red-900/20"></div>
-        <div className="relative max-w-6xl mx-auto px-6 py-4">
-          {/* Logout Button - Top Right */}
-          <div className="absolute top-4 right-6">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="bg-gradient-to-r from-red-500 to-red-700 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:from-red-600 hover:to-red-800 transition-all duration-200 shadow-lg shadow-red-500/25 flex items-center gap-2"
-            >
-              {isLoggingOut ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Logging Out...
-                </>
-              ) : (
-                <>
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </>
-              )}
-            </motion.button>
-          </div>
-
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-full mb-3 shadow-lg shadow-red-500/25">
-              <User className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 text-slate-100 ml-20">
+      {/* Header */}
+      <div className="bg-slate-800/95 backdrop-blur-sm border-b border-slate-600/50 shadow-lg">
+        <div className="max-w-6xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-100">My Space</h1>
+                <p className="text-slate-300">Welcome back, {user?.name || 'User'}!</p>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-              My Space
-            </h1>
-            <p className="text-base text-gray-300 max-w-2xl mx-auto">
-              Welcome back, {user?.name || 'User'}! Manage your profile and upgrade your experience.
-            </p>
             
-            {/* User Status Display */}
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <div className="flex items-center gap-2 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-2">
-                <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  userProfile?.status === 'suspended' ? 'bg-red-500' : 
-                  userProfile?.status === 'restricted' ? 'bg-yellow-500' : 'bg-green-500'
-                )}></div>
-                <span className="text-sm text-gray-300">
-                  Status: {userProfile?.status === 'suspended' ? 'Suspended' : 
-                          userProfile?.status === 'restricted' ? 'Restricted' : 'Active'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-2">
-                <Crown className="w-4 h-4 text-yellow-500" />
-                <span className="text-sm text-gray-300">Plan: {subscription.planName}</span>
-              </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => navigate('/help-settings')}
+                className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                Help & Settings
+              </button>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                {isLoggingOut ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Logging Out...
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </>
+                )}
+              </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pb-4 h-[calc(100vh-200px)] overflow-hidden">
-        {/* Stats Grid */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 max-w-lg mx-auto"
-        >
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
-              className={cn(
-                "bg-gray-800/50 backdrop-blur-sm border rounded-lg p-3 text-center",
-                stat.borderColor
-              )}
-            >
-              <div className={cn("w-8 h-8 rounded-full mx-auto mb-2 flex items-center justify-center", stat.bgColor)}>
-                <stat.icon className={cn("w-4 h-4", stat.color)} />
-              </div>
-              <div className="text-lg font-bold text-white mb-1">{stat.value}</div>
-              <div className="text-gray-400 text-xs">{stat.label}</div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          {/* Profile Information */}
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Account Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Profile Card */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4"
+            transition={{ duration: 0.5 }}
+            className="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-slate-600/30 p-6"
           >
-            <div className="flex items-center space-x-3 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <User className="w-5 h-5 text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Profile Information</h3>
-                <p className="text-gray-400 text-xs">Your account details</p>
+                <h3 className="font-semibold text-slate-100">Profile</h3>
+                <p className="text-sm text-slate-300">Account information</p>
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-red-500/20 rounded-md flex items-center justify-center">
-                  <User className="w-2.5 h-2.5 text-red-400" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Name</div>
-                  <div className="text-white font-medium text-xs">{user?.name || 'User'}</div>
-                </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Name</label>
+                <p className="text-slate-100 font-medium">{user?.name || 'User'}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-red-500/20 rounded-md flex items-center justify-center">
-                  <Shield className="w-2.5 h-2.5 text-red-400" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">User ID</div>
-                  <div className="text-white font-medium font-mono text-xs">{user?.id?.slice(0, 8)}...</div>
-                </div>
+              <div>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Member Since</label>
+                <p className="text-slate-100">August 16, 2025</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-red-500/20 rounded-md flex items-center justify-center">
-                  <Calendar className="w-2.5 h-2.5 text-red-400" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Member Since</div>
-                  <div className="text-white font-medium text-xs">16/08/2025</div>
+              <div>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Status</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                  <span className="text-slate-100 capitalize">{userProfile?.status || 'Active'}</span>
                 </div>
               </div>
             </div>
           </motion.div>
 
-          {/* Current Plan */}
+          {/* Subscription Card */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm border border-gray-600/50 rounded-xl p-4"
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-slate-600/30 p-6"
           >
-            <div className="flex items-center space-x-3 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center">
-                <Crown className="w-4 h-4 text-white" />
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                <Crown className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Current Plan</h3>
-                <p className="text-gray-400 text-xs">Manage your subscription</p>
+                <h3 className="font-semibold text-slate-100">Subscription</h3>
+                <p className="text-sm text-slate-300">Current plan details</p>
               </div>
             </div>
-            
-            <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-600/30 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center">
-                    <Star className="w-3 h-3 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-white">{subscription.planName}</div>
-                    <div className="text-gray-400 text-xs">Active Subscription</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-base font-bold text-white">$9.99</div>
-                  <div className="text-gray-400 text-xs">per month</div>
-                </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Plan</label>
+                <p className="text-slate-100 font-medium">{subscription.planName}</p>
               </div>
-              
+              <div>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Price</label>
+                <p className="text-slate-100">$9.99/month</p>
+              </div>
               <button
                 onClick={handleManageSubscription}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2 text-xs"
+                className="w-full bg-slate-600 hover:bg-slate-500 text-slate-100 px-3 py-2 rounded-lg font-medium transition-colors"
               >
-                <Settings className="w-3 h-3" />
-                <span>Manage</span>
+                Manage Subscription
               </button>
             </div>
           </motion.div>
 
-          {/* Quick Actions */}
+          {/* Activity Card */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4"
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-slate-600/30 p-6"
           >
-            <h3 className="text-lg font-bold text-white mb-3 flex items-center space-x-2">
-              <Zap className="w-4 h-4 text-red-400" />
-              <span>Quick Actions</span>
-            </h3>
-            <div className="space-y-2">
-              <button className="w-full bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2 text-xs">
-                <TrendingUp className="w-3 h-3 text-red-400" />
-                <span>View History</span>
-              </button>
-              <div className="text-xs text-gray-400 text-center">
-                Your account is active with all features enabled
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <Activity className="w-5 h-5 text-blue-400" />
               </div>
+              <div>
+                <h3 className="font-semibold text-slate-100">Activity</h3>
+                <p className="text-sm text-slate-300">Your viewing stats</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Last Active</label>
+                <p className="text-slate-100 font-medium">Today</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Watchlist Items</label>
+                <p className="text-slate-100">{watchlist?.length || 0} titles</p>
+              </div>
+              <button className="w-full bg-slate-600 hover:bg-slate-500 text-slate-100 px-3 py-2 rounded-lg font-medium transition-colors">
+                View History
+              </button>
             </div>
           </motion.div>
         </div>
 
-        {/* Subscription Plans Section */}
+        {/* Upgrade Section */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="h-[calc(100%-400px)] overflow-hidden"
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-8 text-white mb-8"
         >
-          <div className="text-center mb-4">
-            <h3 className="text-xl font-bold text-white mb-1">Upgrade Your Plan</h3>
-            <p className="text-gray-400 text-sm">Unlock premium features and unlimited entertainment</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto h-full">
-            {plans.map((plan) => (
-              <motion.div
-                key={plan.id}
-                whileHover={{ scale: 1.01 }}
-                className={cn(
-                  "relative bg-gray-800/50 backdrop-blur-sm border-2 rounded-xl p-4 transition-all duration-200 flex flex-col justify-between",
-                  selectedPlan === plan.id
-                    ? "border-red-500 bg-red-500/10"
-                    : "border-gray-600 hover:border-red-500/30"
-                )}
+          <div className="max-w-3xl">
+            <h2 className="text-2xl font-bold mb-2">Upgrade to Premium</h2>
+            <p className="text-red-100 mb-6">Unlock 4K streaming, exclusive content, and more with our Premium plan.</p>
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => handleSubscribe('premium')}
+                className="bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors"
               >
-                {plan.popular && (
-                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-red-500 to-red-700 text-white px-3 py-1 rounded-full text-xs font-medium">
-                      Most Popular
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-center mb-3">
-                  <h4 className="text-lg font-semibold text-white mb-1">{plan.name}</h4>
-                  <div className="mb-2">
-                    <span className="text-xl font-bold text-red-400">${plan.price}</span>
-                    <span className="text-gray-400 text-sm">/{plan.period}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1 mb-3 flex-1">
-                  {plan.features.map((feature, index) => (
-                    <div key={index} className="flex items-center space-x-2 text-xs">
-                      <CheckCircle className="w-3 h-3 text-green-400" />
-                      <span className="text-gray-300">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => handleSubscribe(plan.id)}
-                  disabled={isLoading || subscription.status === plan.id}
-                  className={cn(
-                    "w-full py-2 rounded-md font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm",
-                    subscription.status === plan.id
-                      ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-not-allowed"
-                      : selectedPlan === plan.id
-                      ? "bg-gradient-to-r from-red-500 to-red-700 text-white hover:from-red-600 hover:to-red-800"
-                      : "bg-gray-600 text-white hover:bg-gray-500 border border-gray-500"
-                  )}
-                >
-                  {isLoading && selectedPlan === plan.id ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Processing...</span>
-                    </div>
-                  ) : subscription.status === plan.id ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Current Plan</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <span>Subscribe Now</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </div>
-                  )}
-                </button>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Payment Security Notice */}
-          <div className="mt-4 max-w-2xl mx-auto">
-            <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-600/30">
-              <div className="flex items-start space-x-2">
-                <Shield className="w-4 h-4 text-green-400 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-white text-sm mb-1">Secure Payment</h4>
-                  <p className="text-xs text-gray-400">
-                    All payments are processed securely through Stripe. Your payment information is never stored on our servers.
-                  </p>
-                </div>
-              </div>
+                Upgrade Now - $19.99/month
+              </button>
+              <button className="border border-white/30 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors">
+                Learn More
+              </button>
             </div>
           </div>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          <button className="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-slate-600/30 p-6 text-left hover:shadow-2xl hover:border-slate-500/50 transition-all">
+            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mb-4">
+              <Heart className="w-5 h-5 text-purple-400" />
+            </div>
+            <h3 className="font-semibold text-slate-100 mb-1">My Watchlist</h3>
+            <p className="text-sm text-slate-300">View saved content</p>
+          </button>
+
+          <button className="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-slate-600/30 p-6 text-left hover:shadow-2xl hover:border-slate-500/50 transition-all">
+            <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center mb-4">
+              <Play className="w-5 h-5 text-emerald-400" />
+            </div>
+            <h3 className="font-semibold text-slate-100 mb-1">Continue Watching</h3>
+            <p className="text-sm text-slate-300">Resume from where you left</p>
+          </button>
+
+          <button className="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-slate-600/30 p-6 text-left hover:shadow-2xl hover:border-slate-500/50 transition-all">
+            <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center mb-4">
+              <TrendingUp className="w-5 h-5 text-orange-400" />
+            </div>
+            <h3 className="font-semibold text-slate-100 mb-1">Recommendations</h3>
+            <p className="text-sm text-slate-300">Discover new content</p>
+          </button>
+
+          <button className="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-slate-600/30 p-6 text-left hover:shadow-2xl hover:border-slate-500/50 transition-all">
+            <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center mb-4">
+              <Gift className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h3 className="font-semibold text-slate-100 mb-1">Rewards</h3>
+            <p className="text-sm text-slate-300">Check your points</p>
+          </button>
         </motion.div>
       </div>
     </div>

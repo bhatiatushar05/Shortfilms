@@ -182,18 +182,12 @@ const darkTheme = createTheme({
 
 function App() {
   const [currentSection, setCurrentSection] = useState('dashboard');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleNavigation = (section) => {
     setCurrentSection(section);
   };
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
-
   const handleLogout = () => {
-    setIsAuthenticated(false);
     setCurrentSection('dashboard');
   };
 
@@ -249,24 +243,11 @@ function App() {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <ThemeProvider theme={darkTheme}>
-        <CssBaseline />
-        <AuthProvider>
-          <Login onLogin={handleLogin} />
-        </AuthProvider>
-      </ThemeProvider>
-    );
-  }
-
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <AuthProvider>
-        <Layout onNavigate={handleNavigation} onLogout={handleLogout}>
-          {renderContent()}
-        </Layout>
+        <Login />
       </AuthProvider>
     </ThemeProvider>
   );

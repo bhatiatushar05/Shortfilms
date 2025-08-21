@@ -41,6 +41,13 @@ export const API_CONFIG = {
     MEDIA: {
       UPLOAD_VIDEO: '/media/upload/video',
       UPLOAD_IMAGE: '/media/upload/image',
+      UPLOAD_CONTENT: '/media/upload-content',
+    },
+    
+    // Admin Control
+    ADMIN_CONTROL: {
+      OTT_USER_CONTROL: '/admin-control/ott-user/control',
+      OTT_USER_SUBSCRIPTION: '/admin-control/ott-user/subscription',
     },
   },
   
@@ -62,7 +69,23 @@ export const buildApiUrl = (endpoint) => {
 export const getEndpoint = (category, action, params = {}) => {
   const endpoint = API_CONFIG.ENDPOINTS[category]?.[action];
   if (typeof endpoint === 'function') {
-    return endpoint(params);
+    // Handle different parameter patterns
+    if (action === 'TITLE' && params.id) {
+      return endpoint(params.id);
+    } else if (action === 'DETAIL' && params.id) {
+      return endpoint(params.id);
+    } else if (action === 'ROLE' && params.id) {
+      return endpoint(params.id);
+    } else if (action === 'STATUS' && params.id) {
+      return endpoint(params.id);
+    } else if (action === 'ANALYTICS' && params.id) {
+      return endpoint(params.id);
+    } else if (action === 'PREFERENCES' && params.id) {
+      return endpoint(params.id);
+    } else {
+      // For other functions, pass the params object
+      return endpoint(params);
+    }
   }
   return endpoint;
 };

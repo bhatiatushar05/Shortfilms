@@ -52,9 +52,9 @@ import { buildApiUrl, getEndpoint } from '../config/api';
 import axios from 'axios';
 
 const UserManagement = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, tokenVerified } = useAuth();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -71,15 +71,20 @@ const UserManagement = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [error, setError] = useState(null);
+  const [controlDialogOpen, setControlDialogOpen] = useState(false);
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
 
+  // Only fetch users when both authenticated AND token is verified
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && tokenVerified) {
+      console.log('✅ UserManagement: Authentication and token verified, fetching users...');
       fetchUsers();
-      // Refresh user data every 30 seconds to show real-time online status
-      const interval = setInterval(fetchUsers, 30000);
-      return () => clearInterval(interval);
+    } else if (isAuthenticated && !tokenVerified) {
+      console.log('⏳ UserManagement: Authenticated but token not yet verified, waiting...');
+    } else {
+      console.log('❌ UserManagement: Not authenticated, cannot fetch users');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, tokenVerified]);
 
   const fetchUsers = async () => {
     try {
@@ -230,7 +235,7 @@ const UserManagement = () => {
       console.log('📤 Request payload:', { userId: id, action: newStatus === 'active' ? 'activate' : 'suspend' });
       
       // Use the new admin control API that affects OTT platform
-      const response = await axios.post('https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api/admin-control/ott-user/control', {
+      const response = await axios.post(buildApiUrl(getEndpoint('ADMIN_CONTROL', 'OTT_USER_CONTROL')), {
         userId: id,
         action: newStatus === 'active' ? 'activate' : 'suspend',
         reason: newStatus === 'suspended' ? 'Suspended by admin' : 'Activated by admin'
@@ -257,7 +262,7 @@ const UserManagement = () => {
       console.log('🔄 Changing user subscription:', { userId, newSubscription });
       setLoading(true);
       
-      const response = await axios.post('https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api/admin-control/ott-user/subscription', {
+      const response = await axios.post(buildApiUrl(getEndpoint('ADMIN_CONTROL', 'OTT_USER_SUBSCRIPTION')), {
         userId,
         subscription: newSubscription,
         planDetails: {

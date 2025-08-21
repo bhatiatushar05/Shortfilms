@@ -3,23 +3,36 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
+let supabase
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  persistSession: true,
-  storageKey: 'ott-auth',
-  autoRefreshToken: true,
-  detectSessionInUrl: true,
-  auth: {
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Missing Supabase environment variables. Please create a .env.local file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
+  // Use placeholder values to prevent app crash
+  const placeholderUrl = 'https://placeholder.supabase.co'
+  const placeholderKey = 'placeholder-key'
+  
+  console.log('Using placeholder Supabase client. App will not function properly until environment variables are set.')
+  
+  supabase = createClient(placeholderUrl, placeholderKey, {
+    persistSession: false,
+    storageKey: 'ott-auth',
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    auth: {
+      persistSession: false,
+    }
+  })
+} else {
+  supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     storageKey: 'ott-auth',
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
-  }
-})
+    auth: {
+      persistSession: true,
+    }
+  })
+}
 
 // Add error handling to prevent console spam
 supabase.auth.onAuthStateChange((event, session) => {
@@ -85,4 +98,5 @@ supabase.auth.signOut = async () => {
   }
 };
 
+export { supabase }
 export default supabase

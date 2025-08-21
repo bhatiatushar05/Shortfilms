@@ -21,9 +21,9 @@ const Layout = () => {
       {/* Floating Sidebar - Fixed middle-left, truly fixed to prevent scrolling */}
       <SideNav />
 
-      {/* Main Content Area - Margin to clear the floating icons */}
+      {/* Main Content Area - No margin to allow hero to fill full width */}
       <motion.main 
-        className={`w-full relative z-10 min-h-screen ml-16 transition-all duration-300 ${
+        className={`w-full relative z-10 min-h-screen transition-all duration-300 ${
           isNavigationBlurActive ? 'blur-sm' : ''
         }`}
         animate={{

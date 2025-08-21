@@ -1,5 +1,5 @@
 import React from 'react'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Play, Heart, Clock, Star, Film, Tv, Plus } from 'lucide-react'
@@ -9,6 +9,7 @@ import { cn } from '../../utils/cn'
 
 const ContentCard = ({ title, showProgress = false, showWatchlist = true, showPlayButton = true }) => {
   const [isHovered, setIsHovered] = useState(false)
+  const hoverTimeoutRef = useRef(null)
   const { isAuthed } = useSession()
   
   // Validate title object
@@ -41,6 +42,38 @@ const ContentCard = ({ title, showProgress = false, showWatchlist = true, showPl
     } catch (error) {
       console.error('Error toggling watchlist:', error)
     }
+  }
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Hover delay handlers
+  const handleMouseEnter = () => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+    }
+    
+    // Set hover state after 0.5 second delay
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovered(true)
+    }, 500)
+  }
+
+  const handleMouseLeave = () => {
+    // Clear timeout if leaving before 0.5 seconds
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+    }
+    
+    // Immediately remove hover state
+    setIsHovered(false)
   }
 
   const formatRuntime = (seconds) => {
@@ -76,14 +109,17 @@ const ContentCard = ({ title, showProgress = false, showWatchlist = true, showPl
   return (
     <motion.div
       className="group relative"
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-      whileHover={{ scale: 1.03 }}
-      transition={{ duration: 0.2 }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      animate={{ scale: isHovered ? 1.03 : 1 }}
+      transition={{ duration: 0.1 }}
     >
       <Link to={`/title/${title.id}`} className="block">
         {/* Card Container */}
-        <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-dark-800 border border-dark-600/20 shadow-card transition-all duration-200 group-hover:shadow-card-hover group-hover:border-primary-500/30">
+        <div className={cn(
+          "relative aspect-[2/3] overflow-hidden rounded-xl bg-dark-800 border border-dark-600/20 shadow-card transition-all duration-200",
+          isHovered && "shadow-card-hover border-primary-500/30"
+        )}>
           
           {/* Loading Skeleton */}
           <div className="absolute inset-0 bg-gradient-to-br from-dark-700 to-dark-800 animate-pulse" />

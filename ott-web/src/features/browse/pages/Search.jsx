@@ -81,7 +81,7 @@ const Search = () => {
   return (
     <div className="min-h-screen bg-dark-900">
       {/* Search Header */}
-      <div className="page-padding py-8">
+      <div className="page-padding py-8 ml-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -285,7 +285,7 @@ const Search = () => {
       </div>
 
       {/* Search Results */}
-      <div className="page-padding pb-8">
+      <div className="page-padding pb-8 ml-20">
         {isLoading ? (
           <SkeletonSearchResults />
         ) : error ? (

@@ -1,24 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
   Paper,
-  Button,
   Grid,
   Card,
   CardContent,
+  Button,
   TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  LinearProgress,
-  Chip,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
+  Chip,
+  LinearProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -26,78 +22,86 @@ import {
   Alert,
 } from '@mui/material';
 import {
-  CloudUpload as UploadIcon,
-  PlayArrow as PlayIcon,
-  Delete as DeleteIcon,
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
+  Upload as UploadIcon,
   Image as ImageIcon,
-  VideoLibrary as VideoIcon,
+  VideoFile as VideoIcon,
+  Check as CheckIcon,
+  Delete as DeleteIcon,
+  Visibility as VisibilityIcon,
+  PlayArrow as PlayIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { buildApiUrl, getEndpoint } from '../config/api';
 import axios from 'axios';
 
 const MediaUpload = () => {
-  const { isAuthenticated } = useAuth();
-  const [contentType, setContentType] = useState('movie');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [genre, setGenre] = useState('');
-  const [rating, setRating] = useState('PG');
-  const [releaseYear, setReleaseYear] = useState('');
-  const [duration, setDuration] = useState('');
+  const { isAuthenticated, tokenVerified } = useAuth();
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedContent, setUploadedContent] = useState([]);
-  const [selectedFiles, setSelectedFiles] = useState({
-    poster: null,
-    hero: null,
-    video: null
-  });
-  const [previewDialog, setPreviewDialog] = useState({ open: false, file: null });
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [content, setContent] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadType, setUploadType] = useState('video');
   const [uploadStatus, setUploadStatus] = useState('');
+  const [contentForm, setContentForm] = useState({
+    title: '',
+    description: '',
+    type: 'movie',
+    genre: '',
+    duration: '',
+    releaseYear: '',
+    rating: 'PG',
+    status: 'active',
+    is_featured: false
+  });
+
+  // Add refs for file inputs
   const posterInputRef = useRef();
   const heroInputRef = useRef();
   const videoInputRef = useRef();
 
+  // Only fetch content when both authenticated AND token is verified
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && tokenVerified) {
+      console.log('✅ MediaUpload: Authentication and token verified, fetching content...');
       fetchUploadedContent();
+    } else if (isAuthenticated && !tokenVerified) {
+      console.log('⏳ MediaUpload: Authenticated but token not yet verified, waiting...');
+    } else {
+      console.log('❌ MediaUpload: Not authenticated, cannot fetch content');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, tokenVerified]);
 
   const fetchUploadedContent = async () => {
     try {
-      const response = await axios.get('/content/titles');
+      console.log('📡 MediaUpload: Fetching uploaded content...');
+      const response = await axios.get(buildApiUrl(getEndpoint('CONTENT', 'TITLES')));
       if (response.data.success) {
-        setUploadedContent(response.data.data.titles || []);
+        console.log('✅ MediaUpload: Content fetched successfully');
+        setContent(response.data.data.titles || []);
       }
     } catch (error) {
-      console.error('Error fetching content:', error);
+      console.error('❌ MediaUpload: Error fetching content:', error);
+      console.error('❌ MediaUpload: Error response:', error.response?.data);
     }
   };
 
-  const handleFileSelect = (type, event) => {
+  const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
-      setSelectedFiles(prev => ({
-        ...prev,
-        [type]: file
-      }));
+      setSelectedFile(file);
+      console.log('📁 File selected:', file.name, 'Size:', file.size);
     }
   };
 
   const validateForm = () => {
-    if (!title.trim()) {
+    if (!contentForm.title.trim()) {
       alert('Please enter a title');
       return false;
     }
-    if (!selectedFiles.video) {
-      alert('Please select a video file');
-      return false;
-    }
-    if (!selectedFiles.poster) {
-      alert('Please select a poster image');
+    if (!selectedFile) {
+      alert('Please select a file');
       return false;
     }
     return true;
@@ -106,7 +110,7 @@ const MediaUpload = () => {
   const handleUpload = async () => {
     if (!validateForm()) return;
 
-    setIsUploading(true);
+    setUploading(true);
     setUploadProgress(0);
     setUploadStatus('Preparing upload...');
 
@@ -115,29 +119,24 @@ const MediaUpload = () => {
       const formData = new FormData();
       
       // Add content metadata
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('contentType', contentType);
-      formData.append('genre', genre);
-      formData.append('rating', rating);
-      formData.append('releaseYear', releaseYear);
-      formData.append('duration', duration);
+      formData.append('title', contentForm.title);
+      formData.append('description', contentForm.description);
+      formData.append('type', contentForm.type);
+      formData.append('genre', contentForm.genre);
+      formData.append('rating', contentForm.rating);
+      formData.append('releaseYear', contentForm.releaseYear);
+      formData.append('duration', contentForm.duration);
+      formData.append('is_featured', contentForm.is_featured);
 
-      // Add media files
-      if (selectedFiles.poster) {
-        formData.append('poster', selectedFiles.poster);
-      }
-      if (selectedFiles.hero) {
-        formData.append('hero', selectedFiles.hero);
-      }
-      if (selectedFiles.video) {
-        formData.append('video', selectedFiles.video);
+      // Add media file
+      if (selectedFile) {
+        formData.append('file', selectedFile);
       }
 
       setUploadStatus('Uploading files...');
 
       // Upload to backend
-      const response = await axios.post('/media/upload-content', formData, {
+      const response = await axios.post(buildApiUrl(getEndpoint('MEDIA', 'UPLOAD_CONTENT')), formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -155,23 +154,24 @@ const MediaUpload = () => {
         
         // Add uploaded content to the list
         const newContent = response.data.data.title;
-        setUploadedContent(prev => [newContent, ...prev]);
+        setContent(prev => [newContent, ...prev]);
         
         // Refresh the content list to get the latest data
         fetchUploadedContent();
 
         // Reset form
-        setSelectedFiles({
-          poster: null,
-          hero: null,
-          video: null
+        setSelectedFile(null);
+        setContentForm({
+          title: '',
+          description: '',
+          type: 'movie',
+          genre: '',
+          duration: '',
+          releaseYear: '',
+          rating: 'PG',
+          status: 'active',
+          is_featured: false
         });
-        setTitle('');
-        setDescription('');
-        setGenre('');
-        setRating('PG');
-        setReleaseYear('');
-        setDuration('');
         
         setUploadStatus('Upload completed successfully!');
         setTimeout(() => {
@@ -190,7 +190,7 @@ const MediaUpload = () => {
         setUploadStatus('');
       }, 5000);
     } finally {
-      setIsUploading(false);
+      setUploading(false);
       setUploadProgress(0);
     }
   };
@@ -198,8 +198,8 @@ const MediaUpload = () => {
   const handleDeleteContent = async (id) => {
     if (window.confirm('Are you sure you want to delete this content?')) {
       try {
-        await axios.delete(`/content/titles/${id}`);
-        setUploadedContent(prev => prev.filter(content => content.id !== id));
+        await axios.delete(buildApiUrl(getEndpoint('CONTENT', 'TITLE', { id })));
+        setContent(prev => prev.filter(content => content.id !== id));
         alert('Content deleted successfully!');
       } catch (error) {
         console.error('Error deleting content:', error);
@@ -209,7 +209,13 @@ const MediaUpload = () => {
   };
 
   const handlePreview = (file) => {
-    setPreviewDialog({ open: true, file });
+    // Simple file preview - you can enhance this later
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      window.open(url, '_blank');
+    } else {
+      alert(`Preview not available for ${file.type} files`);
+    }
   };
 
   const formatFileSize = (bytes) => {
@@ -249,10 +255,10 @@ const MediaUpload = () => {
         <Button
           variant="contained"
           onClick={handleUpload}
-          disabled={isUploading || !title.trim() || !selectedFiles.video}
+          disabled={uploading || !contentForm.title.trim() || !selectedFile}
           sx={{ background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)' }}
         >
-          {isUploading ? 'Uploading...' : 'Upload Content'}
+          {uploading ? 'Uploading...' : 'Upload Content'}
         </Button>
       </Box>
 
@@ -276,9 +282,9 @@ const MediaUpload = () => {
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Content Type</InputLabel>
               <Select
-                value={contentType}
+                value={contentForm.type}
                 label="Content Type"
-                onChange={(e) => setContentType(e.target.value)}
+                onChange={(e) => setContentForm(prev => ({ ...prev, type: e.target.value }))}
               >
                 <MenuItem value="movie">Movie</MenuItem>
                 <MenuItem value="series">Series</MenuItem>
@@ -289,8 +295,8 @@ const MediaUpload = () => {
 
             <TextField
               label="Title *"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={contentForm.title}
+              onChange={(e) => setContentForm(prev => ({ ...prev, title: e.target.value }))}
               fullWidth
               sx={{ mb: 2 }}
               required
@@ -298,8 +304,8 @@ const MediaUpload = () => {
 
             <TextField
               label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={contentForm.description}
+              onChange={(e) => setContentForm(prev => ({ ...prev, description: e.target.value }))}
               fullWidth
               multiline
               rows={3}
@@ -310,8 +316,8 @@ const MediaUpload = () => {
               <Grid item xs={6}>
                 <TextField
                   label="Genre"
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
+                  value={contentForm.genre}
+                  onChange={(e) => setContentForm(prev => ({ ...prev, genre: e.target.value }))}
                   fullWidth
                 />
               </Grid>
@@ -319,9 +325,9 @@ const MediaUpload = () => {
                 <FormControl fullWidth>
                   <InputLabel>Rating</InputLabel>
                   <Select
-                    value={rating}
+                    value={contentForm.rating}
                     label="Rating"
-                    onChange={(e) => setRating(e.target.value)}
+                    onChange={(e) => setContentForm(prev => ({ ...prev, rating: e.target.value }))}
                   >
                     <MenuItem value="G">G</MenuItem>
                     <MenuItem value="PG">PG</MenuItem>
@@ -337,8 +343,8 @@ const MediaUpload = () => {
               <Grid item xs={6}>
                 <TextField
                   label="Release Year"
-                  value={releaseYear}
-                  onChange={(e) => setReleaseYear(e.target.value)}
+                  value={contentForm.releaseYear}
+                  onChange={(e) => setContentForm(prev => ({ ...prev, releaseYear: e.target.value }))}
                   fullWidth
                   type="number"
                 />
@@ -346,8 +352,8 @@ const MediaUpload = () => {
               <Grid item xs={6}>
                 <TextField
                   label="Duration"
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
+                  value={contentForm.duration}
+                  onChange={(e) => setContentForm(prev => ({ ...prev, duration: e.target.value }))}
                   fullWidth
                   placeholder="e.g., 2h 15m"
                 />
@@ -367,20 +373,20 @@ const MediaUpload = () => {
               {/* Poster Upload */}
               <Grid item xs={12} md={4}>
                 <Card sx={{ 
-                  border: selectedFiles.poster ? '2px solid #4caf50' : '2px dashed rgba(255,255,255,0.3)',
-                  background: selectedFiles.poster ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                  border: selectedFile && selectedFile.type.startsWith('image/') ? '2px solid #4caf50' : '2px dashed rgba(255,255,255,0.3)',
+                  background: selectedFile && selectedFile.type.startsWith('image/') ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
                   cursor: 'pointer',
                   '&:hover': { borderColor: '#4caf50' }
                 }} onClick={() => posterInputRef.current?.click()}>
                   <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                    {selectedFiles.poster ? (
+                    {selectedFile && selectedFile.type.startsWith('image/') ? (
                       <>
                         <CheckIcon sx={{ fontSize: 40, color: '#4caf50', mb: 1 }} />
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {selectedFiles.poster.name}
+                          {selectedFile.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {formatFileSize(selectedFiles.poster.size)}
+                          {formatFileSize(selectedFile.size)}
                         </Typography>
                       </>
                     ) : (
@@ -400,7 +406,7 @@ const MediaUpload = () => {
                   ref={posterInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleFileSelect('poster', e)}
+                  onChange={(e) => handleFileSelect(e)}
                   style={{ display: 'none' }}
                 />
               </Grid>
@@ -408,20 +414,20 @@ const MediaUpload = () => {
               {/* Hero Upload */}
               <Grid item xs={12} md={4}>
                 <Card sx={{ 
-                  border: selectedFiles.hero ? '2px solid #2196f3' : '2px dashed rgba(255,255,255,0.3)',
-                  background: selectedFiles.hero ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
+                  border: selectedFile && selectedFile.type.startsWith('image/') ? '2px solid #2196f3' : '2px dashed rgba(255,255,255,0.3)',
+                  background: selectedFile && selectedFile.type.startsWith('image/') ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
                   cursor: 'pointer',
                   '&:hover': { borderColor: '#2196f3' }
                 }} onClick={() => heroInputRef.current?.click()}>
                   <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                    {selectedFiles.hero ? (
+                    {selectedFile && selectedFile.type.startsWith('image/') ? (
                       <>
                         <CheckIcon sx={{ fontSize: 40, color: '#2196f3', mb: 1 }} />
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {selectedFiles.hero.name}
+                          {selectedFile.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {formatFileSize(selectedFiles.hero.size)}
+                          {formatFileSize(selectedFile.size)}
                         </Typography>
                       </>
                     ) : (
@@ -441,7 +447,7 @@ const MediaUpload = () => {
                   ref={heroInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleFileSelect('hero', e)}
+                  onChange={(e) => handleFileSelect(e)}
                   style={{ display: 'none' }}
                 />
               </Grid>
@@ -449,20 +455,20 @@ const MediaUpload = () => {
               {/* Video Upload */}
               <Grid item xs={12} md={4}>
                 <Card sx={{ 
-                  border: selectedFiles.video ? '2px solid #ff9800' : '2px dashed rgba(255,255,255,0.3)',
-                  background: selectedFiles.video ? 'rgba(255, 152, 0, 0.1)' : 'transparent',
+                  border: selectedFile && selectedFile.type.startsWith('video/') ? '2px solid #ff9800' : '2px dashed rgba(255,255,255,0.3)',
+                  background: selectedFile && selectedFile.type.startsWith('video/') ? 'rgba(255, 152, 0, 0.1)' : 'transparent',
                   cursor: 'pointer',
                   '&:hover': { borderColor: '#ff9800' }
                 }} onClick={() => videoInputRef.current?.click()}>
                   <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                    {selectedFiles.video ? (
+                    {selectedFile && selectedFile.type.startsWith('video/') ? (
                       <>
                         <CheckIcon sx={{ fontSize: 40, color: '#ff9800', mb: 1 }} />
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {selectedFiles.video.name}
+                          {selectedFile.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {formatFileSize(selectedFiles.video.size)}
+                          {formatFileSize(selectedFile.size)}
                         </Typography>
                       </>
                     ) : (
@@ -482,13 +488,13 @@ const MediaUpload = () => {
                   ref={videoInputRef}
                   type="file"
                   accept="video/*"
-                  onChange={(e) => handleFileSelect('video', e)}
+                  onChange={(e) => handleFileSelect(e)}
                   style={{ display: 'none' }}
                 />
               </Grid>
             </Grid>
 
-            {isUploading && (
+            {uploading && (
               <Box sx={{ mt: 3 }}>
                 <LinearProgress variant="determinate" value={uploadProgress} />
                 <Typography variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
@@ -501,60 +507,60 @@ const MediaUpload = () => {
       </Grid>
 
       {/* Uploaded Content */}
-      {uploadedContent.length > 0 && (
+      {content.length > 0 && (
         <Paper sx={{ p: 3, mt: 3, background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(255,255,255,0.1)' }}>
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            Uploaded Content ({uploadedContent.length})
+            Uploaded Content ({content.length})
           </Typography>
           
           <Grid container spacing={2}>
-            {uploadedContent.map((content) => (
-              <Grid item xs={12} sm={6} md={4} key={content.id}>
+            {content.map((item) => (
+              <Grid item xs={12} sm={6} md={4} key={item.id}>
                 <Card sx={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                       <Chip
-                        label={content.kind}
+                        label={item.type}
                         size="small"
                         color="primary"
                       />
                       <Chip
-                        label={content.status}
+                        label={item.status}
                         size="small"
-                        color={content.status === 'active' ? 'success' : 'default'}
+                        color={item.status === 'active' ? 'success' : 'default'}
                       />
                     </Box>
                     
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                      {content.title}
+                      {item.title}
                     </Typography>
                     
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {content.synopsis || 'No description'}
+                      {item.description || 'No description'}
                     </Typography>
                     
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      {content.genres?.map((genre, index) => (
-                        <Chip key={index} label={genre} size="small" />
+                      {item.genre?.split(',').map((genre, index) => (
+                        <Chip key={index} label={genre.trim()} size="small" />
                       ))}
-                      <Chip label={content.rating} size="small" color="warning" />
+                      <Chip label={item.rating} size="small" color="warning" />
                     </Box>
                     
                     <Typography variant="caption" color="text.secondary">
-                      {content.year} • {content.runtime_sec ? Math.floor(content.runtime_sec / 60) + 'm' : 'N/A'}
+                      {item.releaseYear} • {item.duration ? Math.floor(item.duration / 60) + 'm' : 'N/A'}
                     </Typography>
                     
                     <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
                       <IconButton
                         size="small"
-                        onClick={() => handlePreview(content)}
+                        onClick={() => handlePreview(item)}
                         color="primary"
                       >
                         <PlayIcon />
                       </IconButton>
                       <IconButton
                         size="small"
-                        onClick={() => handleDeleteContent(content.id)}
+                        onClick={() => handleDeleteContent(item.id)}
                         color="error"
                       >
                         <DeleteIcon />
@@ -570,20 +576,20 @@ const MediaUpload = () => {
 
       {/* Preview Dialog */}
       <Dialog
-        open={previewDialog.open}
-        onClose={() => setPreviewDialog({ open: false, file: null })}
+        open={false} // Preview functionality removed
+        onClose={() => {}}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>
-          Preview: {previewDialog.file?.title}
+          Preview: {selectedFile?.name}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            {previewDialog.file?.poster_url ? (
+            {selectedFile && selectedFile.type.startsWith('image/') ? (
               <img
-                src={`https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app${previewDialog.file.poster_url}`}
-                alt={previewDialog.file.title}
+                src={URL.createObjectURL(selectedFile)}
+                alt={selectedFile.name}
                 style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain' }}
               />
             ) : (
@@ -595,15 +601,15 @@ const MediaUpload = () => {
               </>
             )}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              {previewDialog.file?.title}
+              {selectedFile?.name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {previewDialog.file?.synopsis}
+              {/* No synopsis available in current state */}
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPreviewDialog({ open: false, file: null })}>
+          <Button onClick={() => {}}>
             Close
           </Button>
         </DialogActions>

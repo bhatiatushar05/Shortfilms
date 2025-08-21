@@ -114,7 +114,7 @@ const TitleDetail = () => {
         </div>
         
         {/* Content */}
-        <div className="relative z-10 flex items-end h-full pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 flex items-end h-full pb-20 px-4 sm:px-6 lg:px-8 ml-20">
           <div className="max-w-4xl">
             {/* Badges */}
             <motion.div
@@ -252,7 +252,7 @@ const TitleDetail = () => {
       </div>
 
       {/* Additional Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-12">
+      <div className="px-4 sm:px-6 lg:px-8 py-12 ml-20">
         <div className="max-w-6xl mx-auto">
           {/* Cast & Crew */}
           {title.cast && title.cast.length > 0 && (

@@ -21,21 +21,27 @@ const HeroSection = ({ title }) => {
 
     autoPlayTimeoutRef.current = setTimeout(() => {
       setShowVideo(true);
-    }, 2000); // 2 seconds
+    }, 500); // 2 seconds
 
     return () => {
       if (autoPlayTimeoutRef.current) clearTimeout(autoPlayTimeoutRef.current);
     };
   }, [title, videoUrl]);
 
-  // When video element is mounted and visible, ensure muted, play, and stop after 10s
+  // When video element is mounted and visible, ensure muted, play, and stop after 15s
   useEffect(() => {
     if (!showVideo || !videoUrl) return;
 
     const el = videoRef.current;
     if (el) {
       el.muted = true;
-      el.play().then(() => setIsPlaying(true)).catch(() => {});
+      el.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          // Silently handle play errors
+        });
     }
 
     autoStopTimeoutRef.current = setTimeout(() => {
@@ -47,6 +53,28 @@ const HeroSection = ({ title }) => {
       if (autoStopTimeoutRef.current) clearTimeout(autoStopTimeoutRef.current);
     };
   }, [showVideo, videoUrl]);
+
+  // Simple scroll detection to pause video
+  useEffect(() => {
+    const handleScroll = () => {
+      // If video is showing, pause it and go back to image
+      if (showVideo) {
+        const video = videoRef.current;
+        if (video) {
+          video.pause();
+        }
+        setIsPlaying(false);
+        setShowVideo(false);
+      }
+    };
+
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [showVideo]);
 
   if (!title) return null;
 
@@ -87,7 +115,7 @@ const HeroSection = ({ title }) => {
   };
 
   return (
-    <div className="relative w-full h-[80vh] min-h-[600px] overflow-hidden">
+    <div className="relative w-full h-screen overflow-hidden">
       {/* Background - Video or Poster */}
       <div className="absolute inset-0">
         {showVideo && videoUrl ? (
@@ -122,7 +150,7 @@ const HeroSection = ({ title }) => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex items-end h-full pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 flex items-end h-full pb-20 px-4 sm:px-6 lg:px-8 ml-20">
         <div className="max-w-4xl">
           {/* Badges */}
           <motion.div

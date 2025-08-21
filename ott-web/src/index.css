@@ -7,6 +7,9 @@
     scroll-behavior: smooth;
     height: 100%;
     overflow-x: hidden;
+    /* Hide scrollbars globally */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
   }
   
   body {
@@ -14,6 +17,9 @@
     height: 100%;
     overflow-x: hidden;
     position: relative;
+    /* Hide scrollbars globally */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
   }
 
   #root {
@@ -21,9 +27,40 @@
     position: relative;
   }
 
-  /* Ensure consistent sizing */
+  /* Hide scrollbars for webkit browsers (Chrome, Safari, Edge) */
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+  }
+
+  /* Global scrollbar hiding for all elements */
   * {
     box-sizing: border-box;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+  }
+
+  /* Additional scrollbar hiding for all pseudo-elements */
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  *::-webkit-scrollbar-track {
+    display: none;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    display: none;
+  }
+
+  *::-webkit-scrollbar-corner {
+    display: none;
   }
 }
 
@@ -179,6 +216,18 @@
   .animate-stagger-4 { animation-delay: 0.4s; }
   .animate-stagger-5 { animation-delay: 0.5s; }
   
+  /* Scrollbar hiding utility class */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+    width: 0;
+    height: 0;
+  }
+
   /* Custom animations */
   .animate-float {
     animation: float 3s ease-in-out infinite;
@@ -191,5 +240,24 @@
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
+  }
+
+  /* Advanced skeleton shimmer animation */
+  @keyframes shimmerMove {
+    0% {
+      background-position: -200px 0;
+    }
+    100% {
+      background-position: calc(200px + 100%) 0;
+    }
+  }
+
+  @keyframes shimmerWave {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
   }
 }

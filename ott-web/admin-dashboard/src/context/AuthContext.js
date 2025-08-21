@@ -17,62 +17,108 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tokenVerified, setTokenVerified] = useState(false);
 
-  // Configure axios base URL from config (without /api since it's already in BASE_URL)
-  axios.defaults.baseURL = 'https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app';
+  // Function to set auth token in axios headers
+  const setAuthToken = (token) => {
+    if (token) {
+      // Set token in axios headers for ALL future requests
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      localStorage.setItem('token', token);
+      console.log('🔐 Token set in axios headers:', token.substring(0, 20) + '...');
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+      localStorage.removeItem('token');
+      console.log('🗑️ Token removed from axios headers');
+    }
+  };
 
-  // Remove old functions that are no longer needed
-  // const setAuthToken = (token) => {
-  //   if (token) {
-  //     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  //     localStorage.setItem('adminToken', token);
-  //   } else {
-  //     delete axios.defaults.headers.common['Authorization'];
-  //     localStorage.removeItem('adminToken');
-  //   }
-  // };
+  // Set up axios interceptor to handle 401 errors
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 && isAuthenticated) {
+          console.log('🔄 Received 401 error, clearing authentication...');
+          logout();
+          alert('Your session has expired. Please log in again.');
+        }
+        return Promise.reject(error);
+      }
+    );
 
-  // const verifyToken = async () => {
-  //   try {
-  //     const response = await axios.get('/auth/verify');
-  //     if (response.data.valid) {
-  //       setUser(response.data.user);
-  //       setIsAuthenticated(true);
-  //     }
-  //   } catch (error) {
-  //     console.error('Token verification failed:', error);
-  //     setAuthToken(null);
-  //   }
-  // };
+    // Cleanup interceptor on unmount
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [isAuthenticated]);
+
+  // Function to verify token validity
+  const verifyToken = async (token) => {
+    try {
+      console.log('🔍 Verifying token...');
+      setAuthToken(token);
+      
+      // Try to verify token by making a request to a protected endpoint
+      const response = await axios.get(buildApiUrl(getEndpoint('USERS', 'LIST')));
+      
+      if (response.data.success) {
+        // Token is valid, restore user session
+        setUser({ id: 'admin', email: 'admin@shortcinema.com', role: 'admin' });
+        setIsAuthenticated(true);
+        setTokenVerified(true);
+        console.log('✅ Token verified successfully');
+        return true;
+      }
+    } catch (error) {
+      console.log('❌ Token verification failed:', error.response?.status, error.response?.data?.message);
+      
+      // Check if it's an authentication error
+      if (error.response?.status === 401) {
+        console.log('🔄 Token appears to be expired or invalid, clearing session...');
+        // Clear invalid token and redirect to login
+        setAuthToken(null);
+        setUser(null);
+        setIsAuthenticated(false);
+        setTokenVerified(false);
+        // Show user-friendly message
+        alert('Your session has expired. Please log in again.');
+        return false;
+      }
+      
+      // For other errors, still clear the session but don't show alert
+      setAuthToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+      setTokenVerified(false);
+      return false;
+    }
+  };
 
   // Check for existing token on app startup
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Set token in axios headers
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      // Try to validate token by making a request
-      axios.get(buildApiUrl(getEndpoint('USERS', 'LIST')))
-        .then(response => {
-          if (response.data.success) {
-            // Token is valid, restore user session
-            setUser({ id: 'admin', email: 'admin@shortcinema.com', role: 'admin' });
-            setIsAuthenticated(true);
-            console.log('✅ Restored session from existing token');
+    const initializeAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        
+        if (token) {
+          console.log('🔄 Found existing token, verifying...');
+          const isValid = await verifyToken(token);
+          
+          if (!isValid) {
+            console.log('❌ Existing token is invalid, user needs to login again');
           }
-        })
-        .catch(error => {
-          console.log('❌ Token expired, clearing session');
-          localStorage.removeItem('token');
-          delete axios.defaults.headers.common['Authorization'];
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
+        } else {
+          console.log('ℹ️ No existing token found');
+        }
+      } catch (error) {
+        console.error('❌ Error during auth initialization:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email, password) => {
@@ -80,25 +126,37 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError('');
       
+      console.log('🔐 Attempting login with:', email);
+      
       // Use real backend authentication
       const response = await axios.post(buildApiUrl(getEndpoint('AUTH', 'LOGIN')), {
         email,
         password
       });
 
+      console.log('📡 Login response:', response.data);
+
       if (response.data.success) {
         const { user, token } = response.data.data;
         
-        // Store token in localStorage
-        localStorage.setItem('token', token);
+        console.log('✅ Login successful, setting token and user data');
+        console.log('🎫 Token received:', token.substring(0, 20) + '...');
         
-        // Set default authorization header for future requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        // Update auth state
+        // Set token and update auth state
+        setAuthToken(token);
         setUser(user);
         setIsAuthenticated(true);
+        setTokenVerified(true);
         setLoading(false);
+        
+        // Verify the token is working by making a test request
+        try {
+          console.log('🧪 Testing token with a protected request...');
+          const testResponse = await axios.get(buildApiUrl(getEndpoint('USERS', 'LIST')));
+          console.log('✅ Token test successful:', testResponse.data.success);
+        } catch (testError) {
+          console.error('❌ Token test failed:', testError.response?.status, testError.response?.data?.message);
+        }
         
         console.log('✅ Login successful with real backend');
         return { success: true };
@@ -107,22 +165,25 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('❌ Login error:', error);
-      setError(error.response?.data?.message || error.message || 'Login failed');
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+      setError(errorMessage);
       setLoading(false);
-      return { success: false, error: error.message };
+      
+      return { success: false, error: errorMessage };
     }
   };
 
   const logout = () => {
-    // Clear token from localStorage
-    localStorage.removeItem('token');
+    console.log('🚪 Logging out user');
     
-    // Clear axios authorization header
-    delete axios.defaults.headers.common['Authorization'];
-    
-    // Reset auth state
+    // Clear token and reset auth state
+    setAuthToken(null);
     setUser(null);
     setIsAuthenticated(false);
+    setTokenVerified(false);
     
     console.log('✅ Logout successful');
   };
@@ -131,6 +192,7 @@ export const AuthProvider = ({ children }) => {
     user,
     isAuthenticated,
     loading,
+    tokenVerified,
     login,
     logout,
   };

@@ -64,12 +64,13 @@ const Home = () => {
     )
   }
 
-  // Use the first title as hero content (The Mandalorian)
-  const heroContent = titles[0]
+  // Use featured title as hero content, fallback to first title if none featured
+  const heroContent = titles.find(title => title.is_featured) || titles[0]
   
   // Debug logging
   console.log('Fetched titles:', titles)
   console.log('Hero content:', heroContent)
+  console.log('Featured titles:', titles.filter(title => title.is_featured))
   
   // Create content rows from the remaining titles
   const contentRows = [
@@ -104,7 +105,7 @@ const Home = () => {
 
       {/* Content Rows - Multiple Rows Below Hero */}
       {contentRows.length > 0 && (
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 ml-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -9,7 +9,7 @@ const Series = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen w-full bg-black">
-        <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8 ml-20">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -26,7 +26,7 @@ const Series = () => {
   if (error) {
     return (
       <div className="min-h-screen w-full bg-black">
-        <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8 ml-20">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -51,7 +51,7 @@ const Series = () => {
   if (!series || series.items.length === 0) {
     return (
       <div className="min-h-screen w-full bg-black">
-        <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8 ml-20">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

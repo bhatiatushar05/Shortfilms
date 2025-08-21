@@ -25,6 +25,7 @@ import Watch from '../features/playback/pages/Watch'
 import MyList from '../features/user/pages/MyList'
 import Continue from '../features/user/pages/Continue'
 import MySpace from '../features/user/pages/MySpace'
+import HelpSettings from '../features/user/pages/HelpSettings'
 
 // Billing pages (protected)
 import Plans from '../features/billing/pages/Plans'
@@ -53,6 +54,7 @@ const AppRoutes = () => {
         <Route path="my-list" element={<PrivateRoute><MyList /></PrivateRoute>} />
         <Route path="continue" element={<PrivateRoute><Continue /></PrivateRoute>} />
         <Route path="my-space" element={<PrivateRoute><MySpace /></PrivateRoute>} />
+        <Route path="help-settings" element={<PrivateRoute><HelpSettings /></PrivateRoute>} />
         <Route path="plans" element={<PrivateRoute><Plans /></PrivateRoute>} />
       </Route>
     </Routes>

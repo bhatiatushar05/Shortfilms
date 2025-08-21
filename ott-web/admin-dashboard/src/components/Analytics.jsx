@@ -23,23 +23,36 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { buildApiUrl, getEndpoint } from '../config/api';
 
 const Analytics = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, tokenVerified } = useAuth();
+  const [analyticsData, setAnalyticsData] = useState({
+    overview: {},
+    content: [],
+    engagement: [],
+    genres: [],
+    timeline: []
+  });
+  const [loading, setLoading] = useState(false);
   const [timeRange, setTimeRange] = useState('7d');
-  const [analyticsData, setAnalyticsData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
+  // Only fetch analytics when both authenticated AND token is verified
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && tokenVerified) {
+      console.log('✅ Analytics: Authentication and token verified, fetching analytics...');
       fetchAnalytics();
+    } else if (isAuthenticated && !tokenVerified) {
+      console.log('⏳ Analytics: Authenticated but token not yet verified, waiting...');
+    } else {
+      console.log('❌ Analytics: Not authenticated, cannot fetch analytics');
     }
-  }, [isAuthenticated, timeRange]);
+  }, [isAuthenticated, tokenVerified, timeRange]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/analytics/overview?range=${timeRange}`);
+      const response = await axios.get(`${buildApiUrl(getEndpoint('ANALYTICS', 'OVERVIEW'))}?range=${timeRange}`);
       setAnalyticsData(response.data.data.overview);
     } catch (error) {
       console.error('Error fetching analytics:', error);

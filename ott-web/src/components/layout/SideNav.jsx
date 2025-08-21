@@ -40,6 +40,12 @@ const SideNav = () => {
     deactivateNavigationBlur()
   }
 
+  const handleNavClick = () => {
+    // Close labels when any nav item is clicked
+    setShowLabels(false)
+    deactivateNavigationBlur()
+  }
+
   const getItemVariants = (index) => ({
     hidden: { opacity: 0, x: -20 },
     visible: { 
@@ -76,7 +82,7 @@ const SideNav = () => {
 
       {createPortal(
         <div 
-          className="fixed left-2 top-1/2 -translate-y-1/2 z-[2000] pointer-events-none" 
+          className="fixed left-6 top-1/2 -translate-y-1/2 z-[2000] pointer-events-none" 
           data-sidebar
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -103,7 +109,7 @@ const SideNav = () => {
                     animate="visible"
                     className="relative h-11 flex items-center"
                   >
-                    <Link to={item.path}>
+                    <Link to={item.path} onClick={handleNavClick}>
                       <button
                         className={`p-3 transition-all duration-300 flex items-center justify-center rounded-lg ${
                           active
@@ -143,7 +149,7 @@ const SideNav = () => {
                         transition={{ delay: index * 0.03 }}
                         className="h-11 flex items-center"
                       >
-                        <Link to={item.path}>
+                        <Link to={item.path} onClick={handleNavClick}>
                           <span className={`text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                             active
                               ? 'text-red-400'

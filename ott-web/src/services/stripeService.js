@@ -3,8 +3,7 @@ import { loadStripe } from '@stripe/stripe-js'
 // Initialize Stripe - replace with your actual publishable key
 // Disable analytics when they're blocked to prevent console errors
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here', {
-  // Disable analytics to prevent blocked request errors
-  apiVersion: '2023-10-16',
+  // Remove apiVersion to prevent version errors
   // This should help reduce analytics requests
 })
 

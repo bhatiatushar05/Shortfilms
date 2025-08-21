@@ -7,7 +7,7 @@ const Shorts = () => {
 
   return (
     <div className="min-h-screen w-full bg-dark-900">
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 ml-20">
         {/* Page Header */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}

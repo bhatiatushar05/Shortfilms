@@ -11,13 +11,19 @@ import {
 } from '@mui/material';
 import { Movie as MovieIcon } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import Layout from './Layout';
 
-const Login = ({ onLogin }) => {
+const Login = () => {
   const [email, setEmail] = useState('admin@shortcinema.com');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  // If already authenticated, show the full admin interface
+  if (isAuthenticated) {
+    return <Layout />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,11 +35,6 @@ const Login = ({ onLogin }) => {
     if (!result.success) {
       setError(result.error);
       setLoading(false);
-    } else {
-      // Call the onLogin callback to notify parent component
-      if (onLogin) {
-        onLogin();
-      }
     }
   };
 

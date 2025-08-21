@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+
 import ContentCard from './ContentCard'
 import { cn } from '../../utils/cn'
 
@@ -113,7 +113,7 @@ const ContentRow = ({
   return (
     <div className={cn("group", className)}>
       {/* Row Header */}
-      <div className="flex items-center justify-between mb-4 px-4 sm:px-6 lg:px-8">
+      <div className="mb-4 px-4 sm:px-6 lg:px-8">
         <motion.h2
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -122,35 +122,6 @@ const ContentRow = ({
         >
           {title}
         </motion.h2>
-
-        {/* Navigation Arrows */}
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => scrollTo('left')}
-            disabled={!canScrollLeft}
-            className={cn(
-              "p-2 rounded-full transition-all duration-200",
-              canScrollLeft 
-                ? "bg-dark-700 hover:bg-dark-600 text-white" 
-                : "bg-dark-800 text-dark-500 cursor-not-allowed"
-            )}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          
-          <button
-            onClick={() => scrollTo('right')}
-            disabled={!canScrollRight}
-            className={cn(
-              "p-2 rounded-full transition-all duration-200",
-              canScrollRight 
-                ? "bg-dark-700 hover:bg-dark-600 text-white" 
-                : "bg-dark-800 text-dark-500 cursor-not-allowed"
-            )}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
       </div>
 
       {/* Content Row Container */}
