@@ -102,13 +102,43 @@ const Dashboard = () => {
       setLoading(true);
       setError('');
       
-      const [usersResponse, contentResponse, analyticsResponse] = await Promise.all([
-        axios.get(buildApiUrl(getEndpoint('USERS', 'LIST'))),
-        axios.get(buildApiUrl(getEndpoint('CONTENT', 'TITLES'))),
-        axios.get(buildApiUrl(getEndpoint('ANALYTICS', 'OVERVIEW')))
-      ]);
+      // Make API calls one by one to better handle individual failures
+      let usersResponse, contentResponse, analyticsResponse;
+      
+      try {
+        usersResponse = await axios.get(buildApiUrl(getEndpoint('USERS', 'LIST')));
+        console.log('✅ Users API call successful');
+      } catch (error) {
+        console.error('❌ Users API call failed:', error.response?.status);
+        if (error.response?.status === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        }
+        usersResponse = { data: { data: { users: [] } } };
+      }
+      
+      try {
+        contentResponse = await axios.get(buildApiUrl(getEndpoint('CONTENT', 'TITLES')));
+        console.log('✅ Content API call successful');
+      } catch (error) {
+        console.error('❌ Content API call failed:', error.response?.status);
+        if (error.response?.status === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        }
+        contentResponse = { data: { data: { titles: [] } } };
+      }
+      
+      try {
+        analyticsResponse = await axios.get(buildApiUrl(getEndpoint('ANALYTICS', 'OVERVIEW')));
+        console.log('✅ Analytics API call successful');
+      } catch (error) {
+        console.error('❌ Analytics API call failed:', error.response?.status);
+        if (error.response?.status === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        }
+        analyticsResponse = { data: { data: { overview: { users: { total: 0 }, engagement: { progressEntries: 0 } } } } };
+      }
 
-      console.log('✅ Dashboard: All API calls successful');
+      console.log('✅ Dashboard: All API calls completed');
       console.log('👥 Users response:', usersResponse.data);
       console.log('🎬 Content response:', contentResponse.data);
       console.log('📊 Analytics response:', analyticsResponse.data);
@@ -122,10 +152,10 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error('❌ Dashboard: Error fetching dashboard data:', error);
-      console.error('❌ Dashboard: Error response:', error.response?.data);
-      console.error('❌ Dashboard: Error status:', error.response?.status);
       
-      if (error.code === 'ECONNREFUSED') {
+      if (error.message === 'Authentication required. Please log in again.') {
+        setError(error.message);
+      } else if (error.code === 'ECONNREFUSED') {
         setError('Backend server not accessible. Please check if backend is running.');
       } else if (error.response?.status === 401) {
         setError('Authentication required. Please log in again.');

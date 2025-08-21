@@ -18,10 +18,32 @@ const authenticateToken = async (req, res, next) => {
 
     // Verify JWT token
     console.log('🔍 Auth middleware - Verifying token...');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('✅ Auth middleware - Token decoded successfully');
-    console.log('🆔 Auth middleware - Decoded user ID:', decoded.userId);
-    console.log('🔍 Auth middleware - Decoded user ID type:', typeof decoded.userId);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('✅ Auth middleware - Token decoded successfully');
+      console.log('🆔 Auth middleware - Decoded user ID:', decoded.userId);
+      console.log('🔍 Auth middleware - Decoded user ID type:', typeof decoded.userId);
+    } catch (jwtError) {
+      console.log('❌ Auth middleware - JWT verification failed:', jwtError.name);
+      
+      if (jwtError.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          error: 'Token expired',
+          message: 'Please login again' 
+        });
+      } else if (jwtError.name === 'JsonWebTokenError') {
+        return res.status(401).json({ 
+          error: 'Invalid token',
+          message: 'Token is malformed or invalid' 
+        });
+      }
+      
+      return res.status(401).json({ 
+        error: 'Token verification failed',
+        message: 'Please login again' 
+      });
+    }
     
     // Check if this is our fallback admin user
     console.log('🔍 Auth middleware - Checking if fallback admin user...');

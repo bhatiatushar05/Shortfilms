@@ -7,6 +7,7 @@ const router = express.Router();
 // Get platform overview statistics
 router.get('/overview', async (req, res, next) => {
   try {
+    console.log('📊 Analytics: Overview request received');
     const { period = '30' } = req.query; // days
 
     // Calculate date range
@@ -14,42 +15,76 @@ router.get('/overview', async (req, res, next) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(period));
 
+    console.log('📊 Analytics: Fetching user statistics...');
+    
     // Get total users
-    const { count: totalUsers } = await supabase
+    const { count: totalUsers, error: usersError } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true });
 
+    if (usersError) {
+      console.error('❌ Analytics: Error fetching total users:', usersError);
+    }
+
     // Get new users in period
-    const { count: newUsers } = await supabase
+    const { count: newUsers, error: newUsersError } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', startDate.toISOString());
 
+    if (newUsersError) {
+      console.error('❌ Analytics: Error fetching new users:', newUsersError);
+    }
+
+    console.log('📊 Analytics: Fetching content statistics...');
+    
     // Get total titles
-    const { count: totalTitles } = await supabase
+    const { count: totalTitles, error: titlesError } = await supabase
       .from('titles')
       .select('*', { count: 'exact', head: true });
 
+    if (titlesError) {
+      console.error('❌ Analytics: Error fetching total titles:', titlesError);
+    }
+
     // Get total movies vs series
-    const { count: totalMovies } = await supabase
+    const { count: totalMovies, error: moviesError } = await supabase
       .from('titles')
       .select('*', { count: 'exact', head: true })
       .eq('kind', 'movie');
 
-    const { count: totalSeries } = await supabase
+    if (moviesError) {
+      console.error('❌ Analytics: Error fetching movies:', moviesError);
+    }
+
+    const { count: totalSeries, error: seriesError } = await supabase
       .from('titles')
       .select('*', { count: 'exact', head: true })
       .eq('kind', 'series');
 
+    if (seriesError) {
+      console.error('❌ Analytics: Error fetching series:', seriesError);
+    }
+
+    console.log('📊 Analytics: Fetching engagement statistics...');
+    
     // Get total watchlist items
-    const { count: totalWatchlist } = await supabase
+    const { count: totalWatchlist, error: watchlistError } = await supabase
       .from('watchlist')
       .select('*', { count: 'exact', head: true });
 
+    if (watchlistError) {
+      console.error('❌ Analytics: Error fetching watchlist:', watchlistError);
+    }
+
     // Get total progress entries
-    const { count: totalProgress } = await supabase
+    const { count: totalProgress, error: progressError } = await supabase
       .from('progress')
       .select('*', { count: 'exact', head: true });
+
+    if (progressError) {
+      console.error('❌ Analytics: Error fetching progress:', progressError);
+    }
 
     const overview = {
       period: parseInt(period),
@@ -69,12 +104,15 @@ router.get('/overview', async (req, res, next) => {
       }
     };
 
+    console.log('✅ Analytics: Overview data prepared successfully:', overview);
+
     res.json({
       success: true,
       data: { overview }
     });
 
   } catch (error) {
+    console.error('❌ Analytics: Overview endpoint error:', error);
     next(error);
   }
 });

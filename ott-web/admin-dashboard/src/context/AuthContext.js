@@ -59,16 +59,19 @@ export const AuthProvider = ({ children }) => {
       console.log('🔍 Verifying token...');
       setAuthToken(token);
       
-      // Try to verify token by making a request to a protected endpoint
-      const response = await axios.get(buildApiUrl(getEndpoint('USERS', 'LIST')));
+      // Use the proper token verification endpoint
+      const response = await axios.get(buildApiUrl(getEndpoint('AUTH', 'VERIFY')));
       
-      if (response.data.success) {
+      if (response.data.success && response.data.data.valid) {
         // Token is valid, restore user session
-        setUser({ id: 'admin', email: 'admin@shortcinema.com', role: 'admin' });
+        const userData = response.data.data.user;
+        setUser(userData);
         setIsAuthenticated(true);
         setTokenVerified(true);
-        console.log('✅ Token verified successfully');
+        console.log('✅ Token verified successfully for user:', userData.email);
         return true;
+      } else {
+        throw new Error('Token verification failed');
       }
     } catch (error) {
       console.log('❌ Token verification failed:', error.response?.status, error.response?.data?.message);

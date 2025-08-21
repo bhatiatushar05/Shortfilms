@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, Play, AlertCircle } from 'lucide-react'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Eye, EyeOff, Mail, Lock, Play, AlertCircle, QrCode, Smartphone } from 'lucide-react'
 import { useAuth } from '../../../hooks/useAuth'
 import { useSession } from '../../../hooks/useSession'
+import QRCodeLogin from '../../../components/auth/QRCodeLogin'
 
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loginMethod, setLoginMethod] = useState('email') // 'email' or 'qr'
   
   const { login, loading, error, clearError } = useAuth()
   const { isAuthed } = useSession()
@@ -44,6 +46,11 @@ const Login = () => {
     }
   }
 
+  const handleLoginSuccess = () => {
+    const from = location.state?.from?.pathname || '/'
+    navigate(from, { replace: true })
+  }
+
   const isEmailNotConfirmed = error?.includes('Email not confirmed') || error?.includes('email not confirmed')
 
   return (
@@ -63,14 +70,53 @@ const Login = () => {
           <p className="text-gray-400 mt-2">Sign in to continue watching</p>
         </motion.div>
 
-        {/* Login Form */}
+        {/* Login Method Toggle */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-dark-800/50 backdrop-blur-sm rounded-2xl p-8 border border-dark-700"
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="bg-dark-800/50 backdrop-blur-sm rounded-2xl p-6 border border-dark-700 mb-6"
         >
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex bg-dark-700 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setLoginMethod('email')}
+              className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md transition-all duration-200 ${
+                loginMethod === 'email'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Email & Password
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginMethod('qr')}
+              className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md transition-all duration-200 ${
+                loginMethod === 'qr'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <QrCode className="w-4 h-4 mr-2" />
+              QR Code & Phone
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Login Form */}
+        <AnimatePresence mode="wait">
+          {loginMethod === 'email' && (
+            <motion.div
+              key="email"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-dark-800/50 backdrop-blur-sm rounded-2xl p-8 border border-dark-700"
+            >
+              <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
@@ -194,7 +240,34 @@ const Login = () => {
               </a>
             </span>
           </div>
+          
+          <div className="mt-4 text-center">
+            <Link
+              to="/qr-demo"
+              className="text-sm text-primary-400 hover:text-primary-300 transition-colors duration-200"
+            >
+              Try QR Code Login Demo →
+            </Link>
+          </div>
         </motion.div>
+          )}
+
+          {/* QR Code Login Section */}
+          {loginMethod === 'qr' && (
+            <motion.div
+              key="qr"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <QRCodeLogin 
+                onBack={() => setLoginMethod('email')}
+                onSuccess={handleLoginSuccess}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )

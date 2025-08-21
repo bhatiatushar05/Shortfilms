@@ -6,6 +6,9 @@ import PrivateRoute from './guard/PrivateRoute'
 import Login from '../features/auth/pages/Login'
 import Signup from '../features/auth/pages/Signup'
 
+// Demo pages
+import QRLoginDemo from '../pages/QRLoginDemo'
+
 // Browse pages
 import Home from '../features/browse/pages/Home'
 import Search from '../features/browse/pages/Search'
@@ -36,6 +39,7 @@ const AppRoutes = () => {
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/qr-demo" element={<QRLoginDemo />} />
       
       {/* Layout wrapper for main app */}
       <Route path="/" element={<Layout />}>

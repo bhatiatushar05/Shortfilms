@@ -8,6 +8,7 @@ require('dotenv').config();
 const path = require('path'); // Added for serving static files
 
 const authRoutes = require('./routes/auth');
+const qrAuthRoutes = require('./routes/qr-auth');
 const contentRoutes = require('./routes/content');
 const userRoutes = require('./routes/users');
 const analyticsRoutes = require('./routes/analytics');
@@ -17,7 +18,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 // Security middleware
 app.use(helmet({
@@ -68,16 +69,48 @@ app.use(compression());
 app.use(morgan('combined'));
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV 
-  });
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connectivity
+    let dbStatus = 'unknown';
+    try {
+      const { data, error } = await require('./config/database').supabase
+        .from('profiles')
+        .select('count', { count: 'exact', head: true });
+      
+      if (error) {
+        dbStatus = 'error';
+        console.error('❌ Health check - Database error:', error);
+      } else {
+        dbStatus = 'connected';
+        console.log('✅ Health check - Database connected');
+      }
+    } catch (dbError) {
+      dbStatus = 'unreachable';
+      console.error('❌ Health check - Database unreachable:', dbError);
+    }
+
+    res.json({ 
+      status: 'OK', 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      database: dbStatus,
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+    res.status(500).json({ 
+      status: 'ERROR', 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/qr-auth', qrAuthRoutes);
 app.use('/api/content', authenticateToken, contentRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/analytics', authenticateToken, analyticsRoutes);

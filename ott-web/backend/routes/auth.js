@@ -100,12 +100,63 @@ router.get('/verify', async (req, res, next) => {
       throw new AppError('No token provided', 401, 'Authentication Error');
     }
 
-    // Verify token (this will be handled by middleware in protected routes)
-    res.json({
-      success: true,
-      message: 'Token is valid',
-      data: { valid: true }
-    });
+    // Actually verify the token
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Check if this is our fallback admin user
+      if (decoded.userId === 'admin-user-12345') {
+        return res.json({
+          success: true,
+          message: 'Token is valid',
+          data: { 
+            valid: true,
+            user: {
+              id: 'admin-user-12345',
+              email: process.env.ADMIN_EMAIL || 'admin@shortcinema.com',
+              role: 'admin'
+            }
+          }
+        });
+      }
+
+      // Check if user exists in database
+      const { data: user, error } = await supabase
+        .from('profiles')
+        .select('id, email, role')
+        .eq('id', decoded.userId)
+        .single();
+
+      if (error || !user) {
+        throw new AppError('User not found', 401, 'Authentication Error');
+      }
+
+      if (user.role !== 'admin') {
+        throw new AppError('Admin access required', 403, 'Authorization Error');
+      }
+
+      res.json({
+        success: true,
+        message: 'Token is valid',
+        data: { 
+          valid: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            role: user.role
+          }
+        }
+      });
+
+    } catch (jwtError) {
+      if (jwtError.name === 'TokenExpiredError') {
+        throw new AppError('Token expired', 401, 'Token Expired');
+      } else if (jwtError.name === 'JsonWebTokenError') {
+        throw new AppError('Invalid token', 401, 'Invalid Token');
+      }
+      throw jwtError;
+    }
 
   } catch (error) {
     next(error);
@@ -147,6 +198,53 @@ router.get('/profile', async (req, res, next) => {
     res.json({
       success: true,
       data: { user }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Debug endpoint for troubleshooting authentication
+router.get('/debug', async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      hasToken: !!token,
+      tokenLength: token ? token.length : 0,
+      tokenPreview: token ? token.substring(0, 20) + '...' : null,
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        JWT_SECRET_SET: !!process.env.JWT_SECRET,
+        JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+        ADMIN_EMAIL: process.env.ADMIN_EMAIL ? 'set' : 'not set',
+        ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ? 'set' : 'not set'
+      }
+    };
+
+    if (token) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        debugInfo.tokenDecoded = {
+          userId: decoded.userId,
+          iat: decoded.iat,
+          exp: decoded.exp,
+          isExpired: Date.now() >= decoded.exp * 1000
+        };
+      } catch (jwtError) {
+        debugInfo.tokenError = {
+          name: jwtError.name,
+          message: jwtError.message
+        };
+      }
+    }
+
+    res.json({
+      success: true,
+      data: debugInfo
     });
 
   } catch (error) {
