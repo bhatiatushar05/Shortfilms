@@ -29,3 +29,4 @@ export const buildApiUrl = (endpoint) => {
 
 // Export the config
 export default API_CONFIG;
+

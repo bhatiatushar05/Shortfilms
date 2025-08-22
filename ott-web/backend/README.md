@@ -1,351 +1,250 @@
-# ShortCinema Admin Backend
+# ShortCinema Backend Server
 
-A powerful Node.js backend for managing your OTT platform with comprehensive content management, user analytics, and media processing capabilities.
-
-## 🚀 Features
-
-### **Content Management**
-- ✅ Add/Edit/Delete movies and series
-- ✅ Episode management for series
-- ✅ Bulk content operations
-- ✅ Content approval workflow
-- ✅ Metadata management
-
-### **User Management**
-- ✅ User profiles and roles (user, admin, moderator)
-- ✅ User analytics and preferences
-- ✅ Subscription management
-- ✅ User status control (active, suspended, banned)
-
-### **Media Management**
-- ✅ Video upload and processing (MP4, AVI, MOV, MKV, WebM)
-- ✅ Image upload and optimization (Poster, Hero, Thumbnail)
-- ✅ Automatic thumbnail generation
-- ✅ Video transcoding and optimization
-- ✅ Bulk media upload
-
-### **Analytics Dashboard**
-- ✅ Platform overview statistics
-- ✅ User engagement metrics
-- ✅ Content performance analytics
-- ✅ Genre-based insights
-- ✅ Time-based trend analysis
-
-### **Security & Admin**
-- ✅ JWT-based authentication
-- ✅ Role-based access control
-- ✅ Admin action logging
-- ✅ Rate limiting
-- ✅ Input validation
-
-## 🛠️ Tech Stack
-
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: JWT + Supabase Auth
-- **File Processing**: FFmpeg, Sharp
-- **File Upload**: Multer
-- **Validation**: Joi
-- **Security**: Helmet, CORS, Rate Limiting
-
-## 📋 Prerequisites
-
-- Node.js 18+ installed
-- Supabase account and project
-- FFmpeg installed on your system
-- AWS S3 account (optional, for cloud storage)
+A robust Node.js backend for the ShortCinema OTT platform with hybrid storage (Supabase + AWS S3), authentication, and media management.
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Supabase account and project
+- AWS account (optional, for media storage)
+
+### Installation
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Environment setup:**
+   ```bash
+   cp env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. **Start the server:**
+   ```bash
+   # Option 1: Use the startup script (recommended)
+   ./start.sh
+   
+   # Option 2: Use npm
+   npm start
+   
+   # Option 3: Development mode
+   npm run dev
+   ```
+
+4. **Stop the server:**
+   ```bash
+   ./stop.sh
+   ```
+
+## ⚙️ Configuration
+
+### Required Environment Variables
 
 ```bash
-cd backend
-npm install
-```
+# Server
+PORT=3001
+NODE_ENV=production
 
-### 2. Environment Setup
+# JWT
+JWT_SECRET=your-super-secret-jwt-key
 
-Copy the environment template and configure your variables:
-
-```bash
-cp env.example .env
-```
-
-Edit `.env` with your configuration:
-
-```env
-# Server Configuration
-PORT=5000
-NODE_ENV=development
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_EXPIRES_IN=24h
-
-# Supabase Configuration
+# Supabase
 SUPABASE_URL=your-supabase-url
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# AWS S3 Configuration (optional)
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+# AWS (optional)
+AWS_ACCESS_KEY_ID=your-aws-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret
 AWS_REGION=us-east-1
-AWS_S3_BUCKET=your-media-bucket-name
+AWS_S3_BUCKET=your-bucket-name
 
-# Admin User Configuration
+# Admin
 ADMIN_EMAIL=admin@shortcinema.com
 ADMIN_PASSWORD=admin123
 ```
 
-### 3. Database Setup
-
-Run the additional schema in your Supabase SQL Editor:
-
-```sql
--- Run the contents of supabase-admin-schema.sql
-```
-
-### 4. Create Admin User
-
-1. Create a user in Supabase Auth
-2. Insert into profiles table with admin role:
-
-```sql
-INSERT INTO public.profiles (id, email, role) 
-VALUES ('your-user-id', 'admin@shortcinema.com', 'admin');
-```
-
-### 5. Start the Server
+### Optional Environment Variables
 
 ```bash
-# Development mode
-npm run dev
+# CloudFront CDN
+AWS_CLOUDFRONT_DISTRIBUTION_ID=your-distribution-id
+AWS_CLOUDFRONT_DOMAIN=your-domain.cloudfront.net
 
-# Production mode
-npm start
-```
+# Media Convert
+AWS_MEDIACONVERT_ENDPOINT=https://mediaconvert.us-east-1.amazonaws.com
 
-The server will start on `http://localhost:5000`
-
-## 📚 API Documentation
-
-### Authentication
-
-#### POST `/api/auth/login`
-Admin login endpoint.
-
-**Request:**
-```json
-{
-  "email": "admin@shortcinema.com",
-  "password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
-      "id": "uuid",
-      "email": "admin@shortcinema.com",
-      "role": "admin"
-    },
-    "token": "jwt-token",
-    "expiresIn": "24h"
-  }
-}
-```
-
-### Content Management
-
-#### GET `/api/content/titles`
-Get all titles with pagination and filters.
-
-**Query Parameters:**
-- `page` (default: 1)
-- `limit` (default: 20)
-- `kind` (movie/series)
-- `genre` (genre filter)
-- `year` (year filter)
-- `rating` (rating filter)
-- `search` (title search)
-
-#### POST `/api/content/titles`
-Create a new title.
-
-**Request:**
-```json
-{
-  "id": "movie_123",
-  "kind": "movie",
-  "slug": "the-avengers",
-  "title": "The Avengers",
-  "synopsis": "Earth's mightiest heroes...",
-  "year": 2012,
-  "rating": "PG-13",
-  "genres": ["action", "adventure", "sci-fi"],
-  "poster_url": "https://example.com/poster.jpg",
-  "hero_url": "https://example.com/hero.jpg"
-}
-```
-
-### User Management
-
-#### GET `/api/users`
-Get all users with pagination.
-
-#### GET `/api/users/:id/analytics`
-Get user analytics and preferences.
-
-### Analytics
-
-#### GET `/api/analytics/overview`
-Get platform overview statistics.
-
-#### GET `/api/analytics/content`
-Get content performance analytics.
-
-#### GET `/api/analytics/engagement`
-Get user engagement metrics.
-
-### Media Upload
-
-#### POST `/api/media/upload/video`
-Upload and process video files.
-
-**Form Data:**
-- `video`: Video file
-- `title_id`: Title ID
-- `episode_id`: Episode ID (optional)
-
-#### POST `/api/media/upload/image`
-Upload and process images.
-
-**Form Data:**
-- `image`: Image file
-- `title_id`: Title ID
-- `type`: Image type (poster/hero/thumbnail)
-- `episode_id`: Episode ID (optional)
-
-## 🔧 Configuration
-
-### File Upload Limits
-
-Configure in `.env`:
-```env
-MAX_FILE_SIZE=500MB
-ALLOWED_VIDEO_FORMATS=mp4,avi,mov,mkv,webm
-ALLOWED_IMAGE_FORMATS=jpg,jpeg,png,webp
-```
-
-### Rate Limiting
-
-```env
+# Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
 ```
 
-## 🚀 Deployment
+## 🔧 API Endpoints
 
-### Production Setup
+### Health & Status
+- `GET /health` - Basic health check
+- `GET /api/health` - Comprehensive system health
+- `GET /` - API information
 
-1. Set `NODE_ENV=production`
-2. Configure production database
-3. Set up cloud storage (AWS S3)
-4. Use PM2 or similar process manager
-5. Set up reverse proxy (Nginx)
+### Authentication
+- `POST /api/auth/login` - Admin login
+- `GET /api/auth/verify` - Verify token
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/profile` - Get user profile
+- `GET /api/auth/debug` - Debug authentication
 
-### Docker Deployment
+### Content Management
+- `GET /api/content` - Get content
+- `POST /api/content` - Create content
+- `PUT /api/content/:id` - Update content
+- `DELETE /api/content/:id` - Delete content
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-EXPOSE 5000
-CMD ["npm", "start"]
-```
+### Media Management
+- `POST /api/media/upload` - Upload media files
+- `GET /api/media/:id` - Get media info
+- `DELETE /api/media/:id` - Delete media
 
-## 📊 Database Schema
+### User Management
+- `GET /api/users` - Get users
+- `POST /api/users` - Create user
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
 
-The backend extends your existing Supabase schema with:
+### Analytics
+- `GET /api/analytics` - Get analytics data
+- `POST /api/analytics` - Log analytics event
 
-- **profiles**: User management and roles
-- **media**: File storage and metadata
-- **subscriptions**: User billing
-- **admin_actions**: Audit logging
-- **content_approvals**: Content moderation
+## 🗄️ Database Schema
 
-## 🔒 Security Features
+The backend uses Supabase with the following main tables:
+- `titles` - Movie/Series metadata
+- `episodes` - Series episode information
+- `profiles` - User profiles
+- `media` - Media file references
+- `analytics` - User behavior tracking
 
-- JWT token authentication
-- Role-based access control
-- Input validation and sanitization
-- Rate limiting
-- CORS protection
-- Helmet security headers
-- Admin action logging
+## ☁️ Storage Architecture
+
+### Hybrid Storage System
+- **Metadata**: Stored in Supabase PostgreSQL
+- **Media Files**: Stored in AWS S3 (optional)
+- **Fallback**: Supabase Storage when AWS unavailable
+
+### Supported Media Types
+- **Video**: MP4, AVI, MOV, MKV, WebM
+- **Images**: JPG, JPEG, PNG, WebP
+- **Max File Size**: 500MB (configurable)
 
 ## 🧪 Testing
 
+### Run Connection Test
 ```bash
-npm test
+node test-connection.js
 ```
 
-## 📝 Development
-
-### Project Structure
-
-```
-backend/
-├── config/          # Database and configuration
-├── middleware/      # Auth and error handling
-├── routes/          # API endpoints
-├── uploads/         # File uploads (gitignored)
-├── server.js        # Main server file
-└── package.json     # Dependencies
+### Health Check
+```bash
+curl http://localhost:3001/health
+curl http://localhost:3001/api/health
 ```
 
-### Adding New Routes
+## 🚨 Troubleshooting
 
-1. Create route file in `routes/`
-2. Add to `server.js`
-3. Implement middleware as needed
-4. Add to API documentation
+### Common Issues
 
-## 🤝 Contributing
+1. **Port Already in Use**
+   ```bash
+   # Check what's using the port
+   lsof -i :3001
+   
+   # Kill the process
+   kill -9 <PID>
+   ```
 
-1. Fork the repository
-2. Create feature branch
-3. Make changes
-4. Test thoroughly
-5. Submit pull request
+2. **Database Connection Failed**
+   - Verify Supabase credentials in `.env`
+   - Check network connectivity
+   - Verify database permissions
 
-## 📄 License
+3. **AWS Services Not Working**
+   - Verify AWS credentials in `.env`
+   - Check IAM permissions
+   - Verify S3 bucket exists
 
-MIT License - see LICENSE file for details
+4. **JWT Token Issues**
+   - Ensure JWT_SECRET is set
+   - Check token expiration
+   - Verify token format
 
-## 🆘 Support
+### Debug Mode
+
+Enable debug logging by setting:
+```bash
+LOG_LEVEL=debug
+ENABLE_REQUEST_LOGGING=true
+```
+
+## 📊 Monitoring
+
+### Health Endpoints
+- `/health` - Basic status
+- `/api/health` - Detailed system health
+- `/api/health/database` - Database status
+- `/api/health/aws` - AWS services status
+- `/api/health/storage` - Storage system status
+
+### Logs
+The server logs important events including:
+- Server startup/shutdown
+- Database connections
+- AWS service status
+- Authentication attempts
+- Error details
+
+## 🔒 Security Features
+
+- **JWT Authentication** - Secure token-based auth
+- **Rate Limiting** - Prevent abuse
+- **CORS Protection** - Cross-origin security
+- **Helmet.js** - Security headers
+- **Input Validation** - Request sanitization
+- **Error Handling** - Secure error responses
+
+## 🚀 Deployment
+
+### Production Checklist
+- [ ] Set `NODE_ENV=production`
+- [ ] Use strong JWT_SECRET
+- [ ] Configure proper CORS origins
+- [ ] Set up SSL/TLS
+- [ ] Configure logging
+- [ ] Set up monitoring
+- [ ] Test all endpoints
+
+### Environment Variables
+Ensure all required environment variables are set in production:
+```bash
+# Required
+PORT, NODE_ENV, JWT_SECRET
+SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+
+# Optional but recommended
+AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS
+```
+
+## 📝 License
+
+MIT License - see LICENSE file for details.
+
+## 🤝 Support
 
 For issues and questions:
-- Check the documentation
-- Review existing issues
-- Create new issue with details
-
-## 🔄 Updates
-
-Keep dependencies updated:
-```bash
-npm update
-npm audit fix
-```
-
----
-
-**Built with ❤️ for ShortCinema**
+1. Check this README
+2. Review error logs
+3. Test with `test-connection.js`
+4. Check health endpoints
+5. Verify environment configuration
