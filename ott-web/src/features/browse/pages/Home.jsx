@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
 import HeroSection from '../../../components/media/HeroSection'
 import ContentRow from '../../../components/media/ContentRow'
-import { SkeletonRow } from '../../../components/ui/Skeleton'
+import { SkeletonRow, SkeletonHero } from '../../../components/ui/Skeleton'
 
 const Home = () => {
   // Fetch all titles directly from the database
@@ -25,8 +25,9 @@ const Home = () => {
     return (
       <div className="min-h-screen w-full bg-black relative z-10">
         <div className="w-full">
-          <SkeletonRow title={false} cards={1} />
-          <div className="space-y-8">
+          {/* Enhanced cinematic hero skeleton */}
+          <SkeletonHero />
+          <div className="space-y-8 px-4 sm:px-6 lg:px-8 py-8 ml-20">
             <SkeletonRow title={true} cards={6} />
             <SkeletonRow title={true} cards={6} />
             <SkeletonRow title={true} cards={6} />

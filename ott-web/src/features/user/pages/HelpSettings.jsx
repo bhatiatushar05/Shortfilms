@@ -4,302 +4,485 @@ import { motion } from 'framer-motion'
 import { 
   ArrowLeft,
   Settings,
-  HelpCircle,
-  Shield,
-  Bell,
-  Globe,
-  Moon,
-  Sun,
-  Monitor,
   User,
-  Lock,
+  Crown,
+  Monitor,
+  HelpCircle,
+  Eye,
+  Calendar,
+  Shield,
   CreditCard,
+  Edit3,
+  Smartphone,
+  Laptop,
+  Tablet,
   Mail,
   Phone,
   MessageCircle,
-  Book,
-  ChevronRight,
-  Check
+  Check,
+  X
 } from 'lucide-react'
 import { useSession } from '../../../hooks/useSession'
+import { useUserProfile } from '../../../hooks/useUserProfile'
+import ProfileAvatars from '../../../components/profile/ProfileAvatars'
 
 const HelpSettings = () => {
   const navigate = useNavigate()
   const { user } = useSession()
-  const [theme, setTheme] = useState('system')
-  const [notifications, setNotifications] = useState(true)
-  const [language, setLanguage] = useState('en')
+  const { profile, updateProfile, loading: profileLoading } = useUserProfile()
+  const [activeSection, setActiveSection] = useState('overview')
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [profileForm, setProfileForm] = useState({
+    displayName: '',
+    avatar: null
+  })
 
-  const handleDemo = (action) => {
-    alert(`Demo: ${action} feature would work in production!`)
-  }
+  const menuItems = [
+    { id: 'overview', label: 'Overview', icon: Eye },
+    { id: 'membership', label: 'Membership', icon: Crown },
+    { id: 'devices', label: 'Linked Devices', icon: Monitor },
+    { id: 'profile', label: 'Edit Profile', icon: User },
+    { id: 'support', label: 'Support', icon: HelpCircle }
+  ]
 
-  const settingsGroups = [
-    {
-      title: 'Account',
-      icon: User,
-      items: [
-        { label: 'Edit Profile', action: () => handleDemo('Edit Profile') },
-        { label: 'Privacy Settings', action: () => handleDemo('Privacy Settings') },
-        { label: 'Security', action: () => handleDemo('Security Settings') },
-        { label: 'Linked Accounts', action: () => handleDemo('Linked Accounts') },
-      ]
-    },
-    {
-      title: 'Preferences',
-      icon: Settings,
-      items: [
-        { 
-          label: 'Theme', 
-          action: () => {},
-          component: (
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setTheme('light')}
-                className={`p-2 rounded-lg transition-colors ${
-                  theme === 'light' ? 'bg-red-100 text-red-600' : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-              >
-                <Sun className="w-4 h-4" />
+  const renderOverview = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <User className="w-6 h-6 text-blue-600" />
+            <h3 className="font-semibold text-gray-900">Account Info</h3>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Name:</span>
+              <span className="text-gray-900">{profile?.display_name || user?.name || 'User'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Member Since:</span>
+              <span className="text-gray-900">August 16, 2025</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Status:</span>
+              <span className="text-green-600 font-medium">Active</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <Crown className="w-6 h-6 text-amber-600" />
+            <h3 className="font-semibold text-gray-900">Current Plan</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="text-2xl font-bold text-gray-900">Basic Plan</div>
+            <div className="text-gray-600">$9.99/month</div>
+            <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+              Upgrade to Premium
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button onClick={() => setActiveSection('profile')} className="flex flex-col items-center p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors">
+            <Edit3 className="w-5 h-5 text-blue-600 mb-2" />
+            <span className="text-sm text-gray-700">Edit Profile</span>
+          </button>
+          <button onClick={() => setActiveSection('devices')} className="flex flex-col items-center p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors">
+            <Monitor className="w-5 h-5 text-green-600 mb-2" />
+            <span className="text-sm text-gray-700">Devices</span>
+          </button>
+          <button onClick={() => setActiveSection('membership')} className="flex flex-col items-center p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors">
+            <Crown className="w-5 h-5 text-amber-600 mb-2" />
+            <span className="text-sm text-gray-700">Membership</span>
+          </button>
+          <button onClick={() => setActiveSection('support')} className="flex flex-col items-center p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors">
+            <HelpCircle className="w-5 h-5 text-purple-600 mb-2" />
+            <span className="text-sm text-gray-700">Support</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderMembership = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Subscription Details</h3>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Current Plan</span>
+            <span className="font-medium text-gray-900">Basic Plan</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Price</span>
+            <span className="font-medium text-gray-900">$9.99/month</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Next Billing</span>
+            <span className="font-medium text-gray-900">September 16, 2025</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Status</span>
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <Check className="w-3 h-3 mr-1" />
+              Active
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Billing Information</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <CreditCard className="w-5 h-5 text-gray-400" />
+              <div>
+                <div className="font-medium text-gray-900">•••• •••• •••• 4242</div>
+                <div className="text-sm text-gray-500">Expires 12/27</div>
+              </div>
+            </div>
+            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">Edit</button>
+          </div>
+          <button className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors">
+            View Billing History
               </button>
-              <button
-                onClick={() => setTheme('dark')}
-                className={`p-2 rounded-lg transition-colors ${
-                  theme === 'dark' ? 'bg-red-100 text-red-600' : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-              >
-                <Moon className="w-4 h-4" />
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">Upgrade to Premium</h3>
+        <p className="text-gray-600 mb-4">Get 4K streaming, download for offline viewing, and more</p>
+        <button className="bg-amber-600 text-white py-2 px-6 rounded-lg hover:bg-amber-700 transition-colors">
+          Upgrade Now - $19.99/month
               </button>
-              <button
-                onClick={() => setTheme('system')}
-                className={`p-2 rounded-lg transition-colors ${
-                  theme === 'system' ? 'bg-red-100 text-red-600' : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-              >
-                <Monitor className="w-4 h-4" />
+      </div>
+    </div>
+  )
+
+  const renderDevices = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Active Devices</h3>
+        <div className="space-y-4">
+          {[
+            { name: 'MacBook Pro', type: 'laptop', lastUsed: 'Currently active', icon: Laptop },
+            { name: 'iPhone 15', type: 'mobile', lastUsed: '2 hours ago', icon: Smartphone },
+            { name: 'iPad Pro', type: 'tablet', lastUsed: '1 day ago', icon: Tablet }
+          ].map((device, index) => (
+            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <device.icon className="w-6 h-6 text-gray-500" />
+                <div>
+                  <div className="font-medium text-gray-900">{device.name}</div>
+                  <div className="text-sm text-gray-500">{device.lastUsed}</div>
+                </div>
+              </div>
+              <button className="text-red-600 hover:text-red-700 text-sm font-medium">
+                Remove
               </button>
             </div>
-          )
-        },
-        { 
-          label: 'Notifications', 
-          action: () => {},
-          component: (
-            <button
-              onClick={() => setNotifications(!notifications)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notifications ? 'bg-red-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  notifications ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          )
-        },
-        { 
-          label: 'Language', 
-          action: () => {},
-          component: (
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1 text-sm"
-            >
-              <option value="en">English</option>
-              <option value="es">Español</option>
-              <option value="fr">Français</option>
-              <option value="de">Deutsch</option>
-              <option value="hi">हिंदी</option>
-            </select>
-          )
-        },
-        { label: 'Playback Quality', action: () => handleDemo('Playback Quality') },
-      ]
-    },
-    {
-      title: 'Subscription',
-      icon: CreditCard,
-      items: [
-        { label: 'Billing History', action: () => handleDemo('Billing History') },
-        { label: 'Payment Methods', action: () => handleDemo('Payment Methods') },
-        { label: 'Cancel Subscription', action: () => handleDemo('Cancel Subscription') },
-        { label: 'Download Invoices', action: () => handleDemo('Download Invoices') },
-      ]
-    }
-  ]
+          ))}
+        </div>
+      </div>
 
-  const helpItems = [
-    {
-      icon: MessageCircle,
-      title: 'Live Chat',
-      description: 'Get instant help from our support team',
-      action: () => handleDemo('Live Chat')
-    },
-    {
-      icon: Mail,
-      title: 'Email Support',
-      description: 'Send us a detailed message',
-      action: () => handleDemo('Email Support')
-    },
-    {
-      icon: Phone,
-      title: 'Phone Support',
-      description: 'Call us for urgent issues',
-      action: () => handleDemo('Phone Support')
-    },
-    {
-      icon: Book,
-      title: 'Help Center',
-      description: 'Browse our knowledge base',
-      action: () => handleDemo('Help Center')
+      <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <Shield className="w-6 h-6 text-blue-600" />
+          <h3 className="font-semibold text-gray-900">Device Limits</h3>
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Devices used:</span>
+            <span className="text-gray-900">3 of 2</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-blue-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            You've reached your device limit. Upgrade to Premium for unlimited devices.
+          </p>
+        </div>
+      </div>
+            </div>
+          )
+
+    const handleProfileSave = async () => {
+    const success = await updateProfile({
+      display_name: profileForm.displayName,
+      avatar_id: profileForm.avatar?.id,
+      avatar_image: profileForm.avatar?.image,
+      avatar_gradient: profileForm.avatar?.gradient
+    })
+    
+    if (success) {
+      setEditingProfile(false)
     }
-  ]
+  }
+
+  const startEditingProfile = () => {
+    setProfileForm({
+      displayName: profile?.display_name || user?.name || '',
+      avatar: profile ? {
+        id: profile.avatar_id,
+        image: profile.avatar_image,
+        gradient: profile.avatar_gradient,
+        name: 'Current'
+      } : null
+    })
+    setEditingProfile(true)
+  }
+
+  const renderProfile = () => (
+    <div className="space-y-6">
+      {/* Profile Picture & Display Name */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-900">Profile</h3>
+          {!editingProfile && (
+              <button
+              onClick={startEditingProfile}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+            >
+              Edit
+              </button>
+          )}
+        </div>
+
+        {editingProfile ? (
+          <div className="space-y-6">
+            {/* Avatar Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Profile Picture</label>
+              <ProfileAvatars
+                selectedAvatar={profileForm.avatar}
+                onSelect={(avatar) => setProfileForm({ ...profileForm, avatar })}
+                size="small"
+              />
+            </div>
+
+            {/* Display Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
+              <input
+                type="text"
+                value={profileForm.displayName}
+                onChange={(e) => setProfileForm({ ...profileForm, displayName: e.target.value })}
+                maxLength={20}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">{profileForm.displayName.length}/20 characters</p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex space-x-3">
+              <button
+                onClick={handleProfileSave}
+                disabled={profileLoading || !profileForm.displayName.trim()}
+                className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {profileLoading ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                onClick={() => setEditingProfile(false)}
+                className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-4">
+            {/* Current Avatar */}
+            <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+              {profile?.avatar_image ? (
+                <>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${profile.avatar_gradient || 'from-blue-400 to-blue-600'}`} />
+                  <img
+                    src={profile.avatar_image}
+                    alt="Profile"
+                    className="w-full h-full object-cover relative z-10"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                    }}
+                  />
+                </>
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+              )}
+            </div>
+            
+            {/* Profile Info */}
+            <div>
+              <div className="font-medium text-gray-900">{profile?.display_name || user?.name || 'User'}</div>
+              <div className="text-sm text-gray-500">{user?.email}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Account Information */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Account Information</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <input
+              type="email"
+              value={user?.email || ''}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+            />
+            <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Privacy Settings */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Privacy Settings</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-gray-900">Profile Visibility</div>
+              <div className="text-sm text-gray-500">Who can see your profile</div>
+            </div>
+            <select className="border border-gray-300 rounded-lg px-3 py-2">
+              <option>Friends only</option>
+              <option>Everyone</option>
+              <option>Private</option>
+            </select>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-gray-900">Activity Status</div>
+              <div className="text-sm text-gray-500">Show when you're watching</div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderSupport = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {[
+          { icon: MessageCircle, title: 'Live Chat', desc: 'Get instant help', color: 'blue' },
+          { icon: Mail, title: 'Email Support', desc: 'Send us a message', color: 'green' },
+          { icon: Phone, title: 'Phone Support', desc: 'Call us directly', color: 'purple' },
+          { icon: HelpCircle, title: 'Help Center', desc: 'Browse FAQs', color: 'amber' }
+        ].map((item, index) => (
+          <button key={index} className="bg-white rounded-lg border border-gray-200 p-6 text-left hover:shadow-md transition-shadow">
+            <div className={`w-12 h-12 bg-${item.color}-100 rounded-lg flex items-center justify-center mb-4`}>
+              <item.icon className={`w-6 h-6 text-${item.color}-600`} />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
+            <p className="text-gray-600 text-sm">{item.desc}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Contact Information</h3>
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Support Email:</span>
+            <span className="text-blue-600">support@shortcinema.com</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Phone:</span>
+            <span className="text-blue-600">+1 (800) 123-4567</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Hours:</span>
+            <span className="text-gray-900">24/7 Support</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'overview': return renderOverview()
+      case 'membership': return renderMembership()
+      case 'devices': return renderDevices()
+      case 'profile': return renderProfile()
+      case 'support': return renderSupport()
+      default: return renderOverview()
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 text-slate-100 ml-20">
-      {/* Header */}
-      <div className="bg-slate-800/95 backdrop-blur-sm border-b border-slate-600/50 shadow-lg">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+    <div className="min-h-screen bg-gray-50 ml-20">
+      {/* Light Theme Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate('/my-space')}
-              className="p-2 hover:bg-slate-600 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
-                <Settings className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Settings className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-100">Help & Settings</h1>
-                <p className="text-slate-300">Manage your preferences and get support</p>
+                <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+                <p className="text-gray-600">Manage your account and preferences</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Settings Section */}
-          <div>
-            <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-red-600" />
-              Settings
-            </h2>
-            
-            <div className="space-y-6">
-              {settingsGroups.map((group, groupIndex) => (
-                <motion.div
-                  key={group.title}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: groupIndex * 0.1 }}
-                  className="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-slate-600/30 overflow-hidden"
-                >
-                  <div className="p-4 border-b border-slate-600/50">
-                    <h3 className="font-semibold text-slate-100 flex items-center gap-2">
-                      <group.icon className="w-4 h-4 text-red-400" />
-                      {group.title}
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-slate-600/30">
-                    {group.items.map((item, itemIndex) => (
-                      <div key={itemIndex} className="p-4 flex items-center justify-between hover:bg-slate-600/30 transition-colors">
-                        <span className="text-slate-200">{item.label}</span>
-                        {item.component ? (
-                          item.component
-                        ) : (
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="flex gap-6">
+          {/* Sidebar Navigation */}
+          <div className="w-64 flex-shrink-0">
+            <nav className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              {menuItems.map((item) => {
+                const Icon = item.icon
+                return (
                           <button
-                            onClick={item.action}
-                            className="text-gray-400 hover:text-red-600 transition-colors"
-                          >
-                            <ChevronRight className="w-4 h-4" />
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
+                      activeSection === item.id 
+                        ? 'bg-blue-50 text-blue-700 border-r-2 border-r-blue-600' 
+                        : 'text-gray-700'
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${activeSection === item.id ? 'text-blue-600' : 'text-gray-400'}`} />
+                    <span className="font-medium">{item.label}</span>
                           </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                )
+              })}
+            </nav>
           </div>
 
-          {/* Help Section */}
-          <div>
-            <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-red-600" />
-              Help & Support
-            </h2>
-            
-            <div className="space-y-4 mb-8">
-              {helpItems.map((item, index) => (
-                <motion.button
-                  key={index}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  onClick={item.action}
-                  className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-left hover:shadow-md hover:border-red-200 transition-all"
-                >
-                  <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-5 h-5 text-red-600" />
-                    </div>
+          {/* Main Content */}
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-800 mb-1">{item.title}</h3>
-                      <p className="text-sm text-gray-600">{item.description}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400 mt-1" />
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Quick Info */}
             <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white"
+              key={activeSection}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
             >
-              <h3 className="font-semibold mb-2">Need immediate help?</h3>
-              <p className="text-red-100 text-sm mb-4">
-                Our support team is available 24/7 to assist you with any issues or questions.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="bg-white/20 text-white px-3 py-1 rounded-lg text-xs">Live Chat</span>
-                <span className="bg-white/20 text-white px-3 py-1 rounded-lg text-xs">Email</span>
-                <span className="bg-white/20 text-white px-3 py-1 rounded-lg text-xs">Phone</span>
-              </div>
-            </motion.div>
-
-            {/* Account Info */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6"
-            >
-              <h3 className="font-semibold text-gray-800 mb-4">Account Information</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">User ID:</span>
-                  <span className="text-gray-800 font-mono">{user?.id?.slice(0, 8)}...</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Member Since:</span>
-                  <span className="text-gray-800">August 16, 2025</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">App Version:</span>
-                  <span className="text-gray-800">2.1.0</span>
-                </div>
-              </div>
+              {renderSection()}
             </motion.div>
           </div>
         </div>
