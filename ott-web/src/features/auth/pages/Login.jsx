@@ -5,6 +5,7 @@ import { Eye, EyeOff, Mail, Lock, Play, AlertCircle, QrCode, Smartphone } from '
 import { useAuth } from '../../../hooks/useAuth'
 import { useSession } from '../../../hooks/useSession'
 import QRCodeLogin from '../../../components/auth/QRCodeLogin'
+import LightRays from '../../../components/ui/LightRays'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -54,37 +55,71 @@ const Login = () => {
   const isEmailNotConfirmed = error?.includes('Email not confirmed') || error?.includes('email not confirmed')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Light Rays Background */}
+      <div style={{ width: '100%', height: '600px', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#FFFFFF"
+          raysSpeed={1.9}
+          lightSpread={2.3}
+          rayLength={1.2}
+          followMouse={true}
+          mouseInfluence={0.2}
+          noiseAmount={0.1}
+          distortion={0.02}
+          className="custom-rays"
+        />
+      </div>
+      
+             <div className="max-w-md w-full relative z-10 mt-24">
         {/* Logo */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
+          initial={{ opacity: 0, y: -30, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.96, ease: "easeOut", delay: 0.16 }}
+          className="text-center mb-6"
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-500 rounded-2xl mb-4">
-            <Play className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">ShortCinema</h1>
-          <p className="text-gray-400 mt-2">Sign in to continue watching</p>
+          <motion.div 
+            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-500/15 to-red-500/5 backdrop-blur-md rounded-3xl mb-4 border border-red-500/20 shadow-2xl"
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            transition={{ duration: 0.24 }}
+          >
+            <Play className="w-8 h-8 text-white drop-shadow-lg" />
+          </motion.div>
+          <motion.h1 
+            className="text-3xl font-bold bg-gradient-to-r from-white via-white to-gray-300 bg-clip-text text-transparent mb-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.64 }}
+          >
+            ShortCinema
+          </motion.h1>
+          <motion.p 
+            className="text-white/60 text-base font-light"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+          >
+            Sign in to continue watching
+          </motion.p>
         </motion.div>
 
         {/* Login Method Toggle */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="bg-dark-800/50 backdrop-blur-sm rounded-2xl p-6 border border-dark-700 mb-6"
+          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.32 }}
+          className="bg-red-500/5 backdrop-blur-xl rounded-3xl p-4 border border-red-500/15 mb-6 shadow-2xl"
         >
-          <div className="flex bg-dark-700 rounded-lg p-1">
+          <div className="flex bg-red-500/5 backdrop-blur-sm rounded-2xl p-2 border border-red-500/15">
             <button
               type="button"
               onClick={() => setLoginMethod('email')}
-              className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center py-3 px-4 rounded-xl transition-all duration-240 ${
                 loginMethod === 'email'
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-red-500/20 text-white shadow-lg backdrop-blur-sm border border-red-500/30'
+                  : 'text-white/60 hover:text-white hover:bg-red-500/10'
               }`}
             >
               <Mail className="w-4 h-4 mr-2" />
@@ -93,10 +128,10 @@ const Login = () => {
             <button
               type="button"
               onClick={() => setLoginMethod('qr')}
-              className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center py-3 px-4 rounded-xl transition-all duration-240 ${
                 loginMethod === 'qr'
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-red-500/20 text-white shadow-lg backdrop-blur-sm border border-red-500/30'
+                  : 'text-white/60 hover:text-white hover:bg-red-500/10'
               }`}
             >
               <QrCode className="w-4 h-4 mr-2" />
@@ -110,20 +145,24 @@ const Login = () => {
           {loginMethod === 'email' && (
             <motion.div
               key="email"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-dark-800/50 backdrop-blur-sm rounded-2xl p-8 border border-dark-700"
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -40, scale: 0.95 }}
+              transition={{ duration: 0.96, ease: "easeOut", delay: 0.48 }}
+              className="bg-red-500/5 backdrop-blur-xl rounded-3xl p-6 border border-red-500/15 shadow-2xl"
             >
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.64, delay: 0.64 }}
+            >
+              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                 <input
                   id="email"
                   type="email"
@@ -131,19 +170,23 @@ const Login = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
-                  className="w-full pl-10 pr-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full pl-12 pr-4 py-3 bg-red-500/10 border border-red-500/25 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/40 focus:bg-red-500/15 backdrop-blur-sm transition-all duration-240 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Enter your email"
                 />
               </div>
-            </div>
+            </motion.div>
 
             {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.64, delay: 0.8 }}
+            >
+              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
@@ -151,19 +194,19 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
-                  className="w-full pl-10 pr-12 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full pl-12 pr-12 py-3 bg-red-500/10 border border-red-500/25 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/40 focus:bg-red-500/15 backdrop-blur-sm transition-all duration-240 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 disabled:opacity-50"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white transition-colors duration-240 disabled:opacity-50"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-            </div>
+            </motion.div>
 
             {/* Error Message */}
             {error && (
@@ -208,11 +251,14 @@ const Login = () => {
 
             {/* Submit Button */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.64, delay: 0.96 }}
+              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255, 255, 255, 0.3)" }}
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-dark-800 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-red-500/20 to-red-500/10 hover:from-red-500/30 hover:to-red-500/20 disabled:from-red-500/10 disabled:to-red-500/5 text-white font-medium py-3 px-6 rounded-2xl backdrop-blur-sm border border-red-500/25 transition-all duration-240 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 focus:ring-offset-transparent disabled:cursor-not-allowed shadow-lg"
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -226,29 +272,32 @@ const Login = () => {
           </form>
 
           {/* Additional Links */}
-          <div className="mt-6 text-center">
-            <a href="#" className="text-sm text-gray-400 hover:text-primary-400 transition-colors duration-200">
+          <motion.div 
+            className="mt-6 text-center space-y-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.64, delay: 1.12 }}
+          >
+            <a href="#" className="block text-sm text-white/60 hover:text-white transition-colors duration-240">
               Forgot your password?
             </a>
-          </div>
-          
-          <div className="mt-4 text-center">
-            <span className="text-sm text-gray-400">
-              Don't have an account?{' '}
-              <a href="/signup" className="text-primary-400 hover:text-primary-300 transition-colors duration-200">
-                Sign up
-              </a>
-            </span>
-          </div>
-          
-          <div className="mt-4 text-center">
+            
+            <div>
+              <span className="text-sm text-white/60">
+                Don't have an account?{' '}
+                <a href="/signup" className="text-white hover:text-white/80 font-medium transition-colors duration-240">
+                  Sign up
+                </a>
+              </span>
+            </div>
+            
             <Link
               to="/qr-demo"
-              className="text-sm text-primary-400 hover:text-primary-300 transition-colors duration-200"
+              className="inline-block text-sm text-white/70 hover:text-white transition-colors duration-240"
             >
               Try QR Code Login Demo →
             </Link>
-          </div>
+          </motion.div>
         </motion.div>
           )}
 
