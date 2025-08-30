@@ -14,7 +14,8 @@ router.get('/titles', async (req, res, next) => {
       genre, 
       year, 
       rating,
-      search 
+      search,
+      all = false // New parameter to get all content
     } = req.query;
 
     let query = supabase
@@ -34,9 +35,11 @@ router.get('/titles', async (req, res, next) => {
       .from('titles')
       .select('*', { count: 'exact', head: true });
 
-    // Apply pagination
-    const offset = (page - 1) * limit;
-    query = query.range(offset, offset + limit - 1);
+    // Apply pagination only if not requesting all content
+    if (!all) {
+      const offset = (page - 1) * limit;
+      query = query.range(offset, offset + limit - 1);
+    }
 
     const { data: titles, error } = await query;
 
@@ -46,7 +49,13 @@ router.get('/titles', async (req, res, next) => {
       success: true,
       data: {
         titles,
-        pagination: {
+        pagination: all ? {
+          page: 1,
+          limit: count,
+          total: count,
+          pages: 1,
+          all: true
+        } : {
           page: parseInt(page),
           limit: parseInt(limit),
           total: count,
@@ -212,12 +221,15 @@ router.put('/titles/:id', async (req, res, next) => {
     console.log('📤 Raw update data:', JSON.stringify(updateData, null, 2));
     
     // Only include fields that exist in the database schema
-    const allowedFields = ['title', 'synopsis', 'kind', 'genre', 'year', 'rating', 'status', 'is_featured', 'runtime_sec'];
+    const allowedFields = ['title', 'synopsis', 'kind', 'genres', 'year', 'rating', 'is_featured', 'runtime_sec'];
     
     if (updateData.title && allowedFields.includes('title')) cleanedData.title = updateData.title.trim();
     if (updateData.synopsis !== undefined && allowedFields.includes('synopsis')) cleanedData.synopsis = updateData.synopsis || '';
     if (updateData.kind && allowedFields.includes('kind')) cleanedData.kind = updateData.kind;
-    if (updateData.genre !== undefined && allowedFields.includes('genre')) cleanedData.genre = updateData.genre || '';
+    if (updateData.genre !== undefined && allowedFields.includes('genres')) {
+      // Convert single genre to array format
+      cleanedData.genres = updateData.genre ? [updateData.genre] : [];
+    }
     if (updateData.year !== undefined && allowedFields.includes('year')) {
       cleanedData.year = updateData.year ? parseInt(updateData.year) : null;
       if (updateData.year && isNaN(cleanedData.year)) {
@@ -225,7 +237,6 @@ router.put('/titles/:id', async (req, res, next) => {
       }
     }
     if (updateData.rating && allowedFields.includes('rating')) cleanedData.rating = updateData.rating;
-    if (updateData.status && allowedFields.includes('status')) cleanedData.status = updateData.status;
     if (updateData.is_featured !== undefined && allowedFields.includes('is_featured')) cleanedData.is_featured = Boolean(updateData.is_featured);
     if (updateData.runtime_sec !== undefined && allowedFields.includes('runtime_sec')) {
       cleanedData.runtime_sec = updateData.runtime_sec ? parseInt(updateData.runtime_sec) : null;

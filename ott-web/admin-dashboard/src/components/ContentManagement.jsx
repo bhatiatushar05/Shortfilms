@@ -51,7 +51,6 @@ const ContentManagement = () => {
     duration: '',
     releaseYear: '',
     rating: 'PG',
-    status: 'active',
     is_featured: false
   });
 
@@ -67,10 +66,13 @@ const ContentManagement = () => {
     }
   }, [isAuthenticated, tokenVerified]);
 
-  const fetchContent = async () => {
+  const fetchContent = async (loadAll = true) => {
     try {
       setLoading(true);
-      const response = await axios.get(buildApiUrl(getEndpoint('CONTENT', 'TITLES')));
+      const url = loadAll 
+        ? `${buildApiUrl(getEndpoint('CONTENT', 'TITLES'))}?all=true`
+        : buildApiUrl(getEndpoint('CONTENT', 'TITLES'));
+      const response = await axios.get(url);
       console.log('📡 Content API response:', response.data);
       const titles = response.data.data.titles || [];
       console.log('📋 Titles data:', titles);
@@ -100,13 +102,10 @@ const ContentManagement = () => {
           }
         }
         
-        // Validate and map status to allowed values
+        // Map featured status to active/inactive since we don't have a status column
         let validStatus = 'active'; // default
-        if (title.status) {
-          const status = title.status.toString().toLowerCase();
-          if (['active', 'inactive', 'draft'].includes(status)) {
-            validStatus = status;
-          }
+        if (title.is_featured !== undefined) {
+          validStatus = title.is_featured ? 'active' : 'active'; // All content is active, featured is separate
         }
         
         // Validate and map type to allowed values
@@ -128,19 +127,28 @@ const ContentManagement = () => {
           releaseYear: title.year || title.releaseYear || '',
           rating: validRating,
           status: validStatus,
-          is_featured: title.is_featured || false
+          is_featured: Boolean(title.is_featured), // Ensure boolean conversion
+          views: title.views || 0
         };
         
         console.log(`✅ Mapped title ${index + 1}:`, mappedTitle);
         console.log(`✅ Mapped title ${index + 1} ID:`, mappedTitle.id);
         console.log(`✅ Mapped title ${index + 1} ID type:`, typeof mappedTitle.id);
+        console.log(`✅ Mapped title ${index + 1} featured:`, mappedTitle.is_featured);
         
         return mappedTitle;
       });
       
       console.log('🔄 Final mapped titles:', mappedTitles);
       console.log('🔄 Final mapped titles IDs:', mappedTitles.map(t => ({ id: t.id, type: typeof t.id })));
+      console.log('🔄 Featured titles count:', mappedTitles.filter(t => t.is_featured).length);
+      console.log('🔄 Total content loaded:', mappedTitles.length);
       setContent(mappedTitles);
+      
+      // Show success message for large content loads
+      if (mappedTitles.length > 20) {
+        console.log(`✅ Successfully loaded ${mappedTitles.length} content items`);
+      }
     } catch (error) {
       console.error('❌ Error fetching content:', error);
       console.error('❌ Error response:', error.response);
@@ -158,6 +166,7 @@ const ContentManagement = () => {
           releaseYear: 2024,
           rating: 'PG-13',
           status: 'active',
+          is_featured: false,
           views: 15420
         },
         {
@@ -169,6 +178,7 @@ const ContentManagement = () => {
           releaseYear: 2024,
           rating: 'TV-MA',
           status: 'active',
+          is_featured: false,
           views: 8920
         }
       ]);
@@ -186,7 +196,6 @@ const ContentManagement = () => {
       duration: '',
       releaseYear: '',
       rating: 'PG',
-      status: 'active',
       is_featured: false
     });
     setAddDialogOpen(true);
@@ -197,7 +206,7 @@ const ContentManagement = () => {
     console.log('🆔 Item ID:', item.id);
     console.log('🎬 Item type:', item.type);
     console.log('📊 Item rating:', item.rating);
-    console.log('📈 Item status:', item.status);
+    console.log('⭐ Item featured status:', item.is_featured);
     console.log('🔍 Item object keys:', Object.keys(item));
     console.log('🔍 Item object values:', Object.values(item));
     
@@ -215,7 +224,6 @@ const ContentManagement = () => {
       duration: stableItem.duration,
       releaseYear: stableItem.releaseYear,
       rating: stableItem.rating,
-      status: stableItem.status,
       is_featured: stableItem.is_featured || false
     });
     setEditDialogOpen(true);
@@ -276,7 +284,7 @@ const ContentManagement = () => {
           genre: formData.genre || '',
           year: formData.releaseYear ? parseInt(formData.releaseYear) : null,
           rating: formData.rating || 'PG-13',
-          status: formData.status || 'active',
+          is_featured: formData.is_featured || false,
           is_featured: Boolean(formData.is_featured)
         };
         
@@ -294,8 +302,8 @@ const ContentManagement = () => {
         console.log('  - Transformed year:', updateData.year);
         console.log('  - Original rating:', formData.rating);
         console.log('  - Transformed rating:', updateData.rating);
-        console.log('  - Original status:', formData.status);
-        console.log('  - Transformed status:', updateData.status);
+        console.log('  - Original featured status:', formData.is_featured);
+        console.log('  - Transformed featured status:', updateData.is_featured);
         console.log('  - Original is_featured:', formData.is_featured);
         console.log('  - Transformed is_featured:', updateData.is_featured);
         
@@ -440,13 +448,15 @@ const ContentManagement = () => {
         return;
       }
       
-      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      // Since the database doesn't have a status column, we'll use is_featured instead
+      // This provides a similar functionality for content visibility
+      const newFeatured = currentStatus === 'active' ? false : true;
       const url = buildApiUrl(getEndpoint('CONTENT', 'TITLE', { id }));
       console.log('🔗 PATCH URL:', url);
-      console.log('📤 Sending data:', { status: newStatus });
+      console.log('📤 Sending data:', { is_featured: newFeatured });
       
-      const response = await axios.patch(url, { status: newStatus });
-      console.log('✅ Status update response:', response.data);
+      const response = await axios.patch(url, { is_featured: newFeatured });
+      console.log('✅ Featured status update response:', response.data);
       
       // Refresh content to show updated status
       fetchContent();
@@ -488,6 +498,10 @@ const ContentManagement = () => {
       // Use PATCH for featured status updates
       const response = await axios.patch(url, { is_featured: newFeatured });
       console.log('✅ Featured status update response:', response.data);
+      
+      // Show success message
+      const status = newFeatured ? 'featured' : 'unfeatured';
+      alert(`Content successfully ${status}!`);
       
       // Refresh content to show updated status
       fetchContent();
@@ -576,8 +590,11 @@ const ContentManagement = () => {
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
           Content Management
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           {renderTestButton()}
+          <Typography variant="body2" sx={{ color: 'text.secondary', mr: 2 }}>
+            Total: <strong>{content.length}</strong> | Featured: <strong>{content.filter(item => item.is_featured).length}</strong>
+          </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -588,6 +605,78 @@ const ContentManagement = () => {
           </Button>
         </Box>
       </Box>
+
+      {/* Hero Content Summary */}
+      <Paper sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)', border: '1px solid rgba(25, 118, 210, 0.2)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
+            🎬 Hero Content Overview
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Showing: <strong>{content.length}</strong> items
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => fetchContent(true)}
+              sx={{ borderColor: 'green', color: 'green' }}
+            >
+              🔄 Load All Content
+            </Button>
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ textAlign: 'center', minWidth: 120 }}>
+            <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700 }}>
+              {content.filter(item => item.is_featured).length}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Featured Content (Hero)
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center', minWidth: 120 }}>
+            <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 700 }}>
+              {content.filter(item => item.type === 'movie').length}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Movies
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center', minWidth: 120 }}>
+            <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 700 }}>
+              {content.filter(item => item.type === 'series').length}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Series
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'center', minWidth: 120 }}>
+            <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 700 }}>
+              {content.length}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Total Content
+            </Typography>
+          </Box>
+        </Box>
+        
+        {/* Hero Content Instructions */}
+        <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(25, 118, 210, 0.05)', borderRadius: 1, border: '1px solid rgba(25, 118, 210, 0.1)' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+            <strong>💡 Hero Content Management:</strong>
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+            • <strong>Featured content</strong> appears in the hero section on the homepage
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+            • Click on the "Featured" chip in the table to toggle hero status
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+            • Only one piece of content should be featured at a time for optimal user experience
+          </Typography>
+        </Box>
+      </Paper>
 
       {/* Search and Filters */}
       <Paper sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -608,28 +697,59 @@ const ContentManagement = () => {
       </Paper>
 
       {/* Content Table */}
-      <Paper sx={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <TableContainer>
-          <Table>
+      <Paper sx={{ 
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', 
+        border: '1px solid rgba(255,255,255,0.1)',
+        overflow: 'hidden'
+      }}>
+        <TableContainer sx={{ 
+          maxHeight: content.length > 20 ? 800 : 600, // Increase height for large content lists
+          overflowX: 'auto',
+          '&::-webkit-scrollbar': {
+            height: 8,
+            width: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: 4,
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(255,255,255,0.3)',
+            borderRadius: 4,
+            '&:hover': {
+              background: 'rgba(255,255,255,0.5)',
+            },
+          },
+        }}>
+          <Table sx={{ minWidth: 1200 }}>
             <TableHead>
               <TableRow sx={{ background: 'rgba(25, 118, 210, 0.1)' }}>
-                <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Genre</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Year</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Rating</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Featured</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Views</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 200, maxWidth: 300 }}>Title</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 80, maxWidth: 100 }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 120, maxWidth: 150 }}>Genre</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 80, maxWidth: 100 }}>Duration</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 60, maxWidth: 80 }}>Year</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 80, maxWidth: 100 }}>Rating</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 80, maxWidth: 100 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 100, maxWidth: 120 }}>Featured</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 80, maxWidth: 100 }}>Views</TableCell>
+                <TableCell sx={{ fontWeight: 600, minWidth: 120, maxWidth: 150 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredContent.map((item) => (
-                <TableRow key={item.id} hover>
+                <TableRow 
+                  key={item.id} 
+                  hover
+                  sx={{ 
+                    background: item.is_featured ? 'rgba(25, 118, 210, 0.05)' : 'transparent',
+                    '&:hover': {
+                      background: item.is_featured ? 'rgba(25, 118, 210, 0.1)' : 'rgba(255, 255, 255, 0.05)'
+                    }
+                  }}
+                >
                   <TableCell>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.title}
                     </Typography>
                   </TableCell>
@@ -640,7 +760,11 @@ const ContentManagement = () => {
                       color={item.type === 'movie' ? 'primary' : 'secondary'}
                     />
                   </TableCell>
-                  <TableCell>{item.genre}</TableCell>
+                  <TableCell>
+                    <Typography sx={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.genre}
+                    </Typography>
+                  </TableCell>
                   <TableCell>{item.duration}</TableCell>
                   <TableCell>{item.releaseYear}</TableCell>
                   <TableCell>
@@ -659,11 +783,18 @@ const ContentManagement = () => {
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={item.is_featured ? 'Featured' : 'Not Featured'}
+                      label={item.is_featured ? '⭐ Featured' : 'Not Featured'}
                       size="small"
                       color={item.is_featured ? 'primary' : 'default'}
                       onClick={() => toggleFeaturedStatus(item.id, item.is_featured)}
-                      sx={{ cursor: 'pointer' }}
+                      sx={{ 
+                        cursor: 'pointer',
+                        fontWeight: item.is_featured ? 600 : 400,
+                        '&:hover': {
+                          transform: 'scale(1.05)',
+                          transition: 'transform 0.2s'
+                        }
+                      }}
                     />
                   </TableCell>
                   <TableCell>{item.views?.toLocaleString() || 0}</TableCell>
@@ -766,18 +897,7 @@ const ContentManagement = () => {
                 <MenuItem value="TV-MA">TV-MA</MenuItem>
               </Select>
             </FormControl>
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                label="Status"
-              >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-                <MenuItem value="draft">Draft</MenuItem>
-              </Select>
-            </FormControl>
+
             <FormControl fullWidth>
               <InputLabel>Featured</InputLabel>
               <Select

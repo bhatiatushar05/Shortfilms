@@ -48,24 +48,24 @@ export const useAuth = () => {
       // If login successful, check if user is suspended/restricted
       if (data.user) {
         try {
-          // Check profiles table for user status (this is where admin dashboard updates it)
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('status, subscription')
-            .eq('id', data.user.id)
+          // Check user_controls table for user status (this is where admin dashboard updates it)
+          const { data: controlData, error: controlError } = await supabase
+            .from('user_controls')
+            .select('status, can_access, access_level')
+            .eq('user_id', data.user.id)
             .single()
 
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('Error checking user profile:', profileError)
-            // Continue with login if we can't check profile
+          if (controlError && controlError.code !== 'PGRST116') {
+            console.error('Error checking user controls:', controlError)
+            // Continue with login if we can't check controls
             return true
           }
 
-          if (profileData) {
-            console.log('User profile status:', profileData.status)
+          if (controlData) {
+            console.log('User control status:', controlData.status)
             
             // Check if user is suspended
-            if (profileData.status === 'suspended') {
+            if (controlData.status === 'suspended' || controlData.can_access === false) {
               // User is suspended, sign them out immediately
               await supabase.auth.signOut()
               setError('Access denied: Your account is suspended. Please contact admin.')
@@ -73,14 +73,14 @@ export const useAuth = () => {
             }
             
             // Check if user is restricted
-            if (profileData.status === 'restricted') {
+            if (controlData.status === 'restricted' || controlData.access_level === 'limited') {
               // User is restricted but can still access
               console.log('User has restricted access')
             }
           }
-        } catch (profileErr) {
-          console.error('Error checking user profile:', profileErr)
-          // Continue with login if we can't check profile
+        } catch (controlErr) {
+          console.error('Error checking user controls:', controlErr)
+          // Continue with login if we can't check controls
         }
       }
 

@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
   // Backend API base URL
-  BASE_URL: 'https://backend-cwhjl4t24-tushars-projects-87ac9c27.vercel.app/api',
+  BASE_URL: 'http://localhost:3001/api',
   
   // API endpoints
   ENDPOINTS: {
@@ -46,8 +46,8 @@ export const API_CONFIG = {
     
     // Admin Control
     ADMIN_CONTROL: {
-      OTT_USER_CONTROL: '/admin-control/ott-user/control',
-      OTT_USER_SUBSCRIPTION: '/admin-control/ott-user/subscription',
+      OTT_USER_CONTROL: '/admin/ott-user/control',
+      OTT_USER_SUBSCRIPTION: '/admin/ott-user/subscription',
     },
   },
   

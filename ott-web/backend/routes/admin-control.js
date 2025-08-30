@@ -160,12 +160,17 @@ router.get('/ott-user/:userId/status', async (req, res, next) => {
   try {
     const { userId } = req.params;
 
-    // Get user control status from user_controls table
+    // Get user control status from user_controls table (get the latest record)
+    console.log('🔍 Querying user_controls for userId:', userId);
     const { data: control, error: controlError } = await supabase
       .from('user_controls')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    console.log('🔍 Control query result:', { control, controlError });
 
     // Get user status from profiles table (this is where admin dashboard updates it)
     const { data: profile, error: profileError } = await supabase
@@ -205,18 +210,18 @@ router.get('/ott-user/:userId/status', async (req, res, next) => {
     console.log('can_access type:', typeof control?.can_access);
     console.log('can_access !== false:', control?.can_access !== false);
 
-    // Determine status and access - prioritize profile status since that's what admin dashboard updates
+    // Determine status and access - prioritize user_controls table since that's what admin control API updates
     let status = 'active';
     let canAccess = true;
     
-    if (profile && profile.status) {
-      status = profile.status;
-      canAccess = profile.status !== 'suspended';
-      console.log(`🔍 User ${userId}: Using profile status=${status}, canAccess=${canAccess}`);
-    } else if (control) {
+    if (control) {
       status = control.status || 'active';
       canAccess = control.can_access !== false;
       console.log(`🔍 User ${userId}: Using control status=${status}, can_access=${control.can_access}, canAccess=${canAccess}`);
+    } else if (profile && profile.status) {
+      status = profile.status;
+      canAccess = profile.status !== 'suspended';
+      console.log(`🔍 User ${userId}: Using profile status=${status}, canAccess=${canAccess}`);
     } else {
       console.log(`🔍 User ${userId}: No status records found, using defaults`);
     }

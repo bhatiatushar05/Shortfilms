@@ -165,9 +165,17 @@ const UserManagement = () => {
         await axios.patch(buildApiUrl(getEndpoint('USERS', 'ROLE', selectedUser.id)), { 
           role: formData.role 
         });
-        await axios.patch(buildApiUrl(getEndpoint('USERS', 'STATUS', selectedUser.id)), { 
-          status: formData.status 
-        });
+        
+        // Use admin control API for status updates instead of PATCH endpoint
+        if (formData.status !== selectedUser.status) {
+          const action = formData.status === 'active' ? 'activate' : 'suspend';
+          await axios.post(buildApiUrl(getEndpoint('ADMIN_CONTROL', 'OTT_USER_CONTROL')), {
+            userId: selectedUser.id,
+            action: action,
+            reason: formData.status === 'suspended' ? 'Suspended by admin' : 'Activated by admin'
+          });
+        }
+        
         showSnackbar('User updated successfully!', 'success');
       } else {
         // Add new user - this would need to be implemented in your backend

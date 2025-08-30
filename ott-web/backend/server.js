@@ -48,19 +48,23 @@ app.use(cors({
 // Handle CORS preflight requests
 app.options('*', cors());
 
-// Rate limiting with configuration
+// Rate limiting with configuration - Apply only to content and media routes
 const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.maxRequests,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for health checks and admin dashboard
-    return req.path === '/health' || req.path.startsWith('/api/health') || req.path.startsWith('/api/auth');
-  }
 });
-app.use('/api/', limiter);
+
+// Apply rate limiting only to specific routes that need it
+app.use('/api/content', limiter);
+app.use('/api/media', limiter);
+app.use('/api/users', limiter);
+app.use('/api/analytics', limiter);
+app.use('/api/admin', limiter);
+app.use('/api/aws-media', limiter);
+app.use('/api/hybrid-pipeline', limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '50mb' }));
