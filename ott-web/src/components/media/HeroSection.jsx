@@ -21,7 +21,7 @@ const HeroSection = ({ title }) => {
 
     autoPlayTimeoutRef.current = setTimeout(() => {
       setShowVideo(true);
-    }, 500); // 2 seconds
+    }, 1500); // 2 seconds
 
     return () => {
       if (autoPlayTimeoutRef.current) clearTimeout(autoPlayTimeoutRef.current);
