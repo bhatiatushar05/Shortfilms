@@ -46,6 +46,26 @@ router.post('/ott-user/control', async (req, res, next) => {
           can_access: false
         };
         message = 'User suspended from OTT platform';
+        
+        // Also update Supabase auth metadata to block access
+        try {
+          const { error: supabaseError } = await supabase.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              status: 'suspended',
+              suspended_at: new Date().toISOString(),
+              suspension_reason: reason || 'Suspended by admin',
+              can_access: false
+            }
+          });
+          
+          if (supabaseError) {
+            console.log('⚠️ Warning: Could not update Supabase user metadata:', supabaseError.message);
+          } else {
+            console.log('✅ Supabase user metadata updated for suspension');
+          }
+        } catch (supabaseErr) {
+          console.log('⚠️ Warning: Supabase integration failed:', supabaseErr.message);
+        }
         break;
 
       case 'activate':
@@ -57,6 +77,26 @@ router.post('/ott-user/control', async (req, res, next) => {
           can_access: true
         };
         message = 'User activated in OTT platform';
+        
+        // Also update Supabase auth metadata to restore access
+        try {
+          const { error: supabaseError } = await supabase.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              status: 'active',
+              suspended_at: null,
+              suspension_reason: null,
+              can_access: true
+            }
+          });
+          
+          if (supabaseError) {
+            console.log('⚠️ Warning: Could not update Supabase user metadata:', supabaseError.message);
+          } else {
+            console.log('✅ Supabase user metadata updated for activation');
+          }
+        } catch (supabaseErr) {
+          console.log('⚠️ Warning: Supabase integration failed:', supabaseErr.message);
+        }
         break;
 
       case 'restrict':
@@ -69,6 +109,27 @@ router.post('/ott-user/control', async (req, res, next) => {
           access_level: 'limited'
         };
         message = 'User access restricted in OTT platform';
+        
+        // Also update Supabase auth metadata for restriction
+        try {
+          const { error: supabaseError } = await supabase.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              status: 'restricted',
+              restricted_at: new Date().toISOString(),
+              restriction_reason: reason || 'Restricted by admin',
+              can_access: true,
+              access_level: 'limited'
+            }
+          });
+          
+          if (supabaseError) {
+            console.log('⚠️ Warning: Could not update Supabase user metadata:', supabaseError.message);
+          } else {
+            console.log('✅ Supabase user metadata updated for restriction');
+          }
+        } catch (supabaseErr) {
+          console.log('⚠️ Warning: Supabase integration failed:', supabaseErr.message);
+        }
         break;
     }
 

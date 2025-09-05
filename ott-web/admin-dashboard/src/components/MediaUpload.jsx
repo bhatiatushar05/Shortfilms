@@ -1,34 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
   Paper,
-  Grid,
-  Card,
-  CardContent,
   Button,
   TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
   IconButton,
   Chip,
+  Alert,
+  Snackbar,
+  CircularProgress,
   LinearProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert,
+  FormControlLabel,
+  Switch,
+  Tooltip,
+  Badge,
 } from '@mui/material';
 import {
-  Upload as UploadIcon,
-  Image as ImageIcon,
-  VideoFile as VideoIcon,
-  Check as CheckIcon,
+  CloudUpload as CloudUploadIcon,
   Delete as DeleteIcon,
-  Visibility as VisibilityIcon,
   PlayArrow as PlayIcon,
+  Refresh as RefreshIcon,
+  Storage as StorageIcon,
+  Movie as MovieIcon,
+  Image as ImageIcon,
+  VideoFile as VideoFileIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { buildApiUrl, getEndpoint } from '../config/api';
@@ -36,189 +44,196 @@ import axios from 'axios';
 
 const MediaUpload = () => {
   const { isAuthenticated, tokenVerified } = useAuth();
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [content, setContent] = useState([]);
+  const [uploadedContent, setUploadedContent] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadType, setUploadType] = useState('video');
-  const [uploadStatus, setUploadStatus] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contentToDelete, setContentToDelete] = useState(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState(null);
+  const [storageStats, setStorageStats] = useState(null);
+  const [awsConnectionStatus, setAwsConnectionStatus] = useState('checking');
+
+  const posterFileRef = useRef();
+  const heroFileRef = useRef();
+  const videoFileRef = useRef();
+
   const [contentForm, setContentForm] = useState({
     title: '',
     description: '',
-    type: 'movie',
     genre: '',
-    duration: '',
     releaseYear: '',
+    duration: '',
     rating: 'PG',
-    status: 'active',
-    is_featured: false
+    language: 'English',
+    quality: 'HD',
+    is_featured: false,
+    tags: '',
   });
 
-  // Add refs for file inputs
-  const posterInputRef = useRef();
-  const heroInputRef = useRef();
-  const videoInputRef = useRef();
+  const [posterFile, setPosterFile] = useState(null);
+  const [heroFile, setHeroFile] = useState(null);
+  const [videoFile, setVideoFile] = useState(null);
 
-  // Only fetch content when both authenticated AND token is verified
-  useEffect(() => {
-    if (isAuthenticated && tokenVerified) {
-      console.log('✅ MediaUpload: Authentication and token verified, fetching content...');
-      fetchUploadedContent();
-    } else if (isAuthenticated && !tokenVerified) {
-      console.log('⏳ MediaUpload: Authenticated but token not yet verified, waiting...');
-    } else {
-      console.log('❌ MediaUpload: Not authenticated, cannot fetch content');
-    }
-  }, [isAuthenticated, tokenVerified]);
-
-  const fetchUploadedContent = async () => {
+  const checkAWSConnection = useCallback(async () => {
     try {
-      console.log('📡 MediaUpload: Fetching uploaded content...');
-      const response = await axios.get(buildApiUrl(getEndpoint('CONTENT', 'TITLES')));
+      const response = await axios.get(buildApiUrl(getEndpoint('AWS_MEDIA', 'TEST_CONNECTION')));
       if (response.data.success) {
-        console.log('✅ MediaUpload: Content fetched successfully');
-        setContent(response.data.data.titles || []);
+        setAwsConnectionStatus('connected');
+      } else {
+        setAwsConnectionStatus('error');
       }
     } catch (error) {
-      console.error('❌ MediaUpload: Error fetching content:', error);
-      console.error('❌ MediaUpload: Error response:', error.response?.data);
+      console.error('❌ AWS connection check failed:', error);
+      setAwsConnectionStatus('error');
     }
-  };
+  }, []);
 
-  const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      console.log('📁 File selected:', file.name, 'Size:', file.size);
+  const fetchStorageStats = useCallback(async () => {
+    try {
+      const response = await axios.get(buildApiUrl(getEndpoint('AWS_MEDIA', 'STORAGE_STATS')));
+      if (response.data.success) {
+        setStorageStats(response.data.data);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching storage stats:', error);
     }
-  };
+  }, []);
 
-  const validateForm = () => {
-    if (!contentForm.title.trim()) {
-      alert('Please enter a title');
-      return false;
+  const fetchUploadedContent = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(buildApiUrl(getEndpoint('CONTENT', 'TITLES')) + '?all=true');
+      if (response.data.success) {
+        const titles = response.data.data.titles || [];
+        setUploadedContent(titles);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching content:', error);
+      setUploadedContent([]);
+    } finally {
+      setLoading(false);
     }
-    if (!selectedFile) {
-      alert('Please select a file');
-      return false;
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && tokenVerified) {
+      fetchUploadedContent();
+      fetchStorageStats();
+      checkAWSConnection();
     }
-    return true;
+  }, [isAuthenticated, tokenVerified, fetchUploadedContent, fetchStorageStats, checkAWSConnection]);
+
+  const handleFileSelect = (fileType, file) => {
+    if (!file) return;
+    const maxSize = fileType === 'video' ? 500 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setSnackbar({
+        open: true,
+        message: `${fileType} file size must be less than ${fileType === 'video' ? '500MB' : '10MB'}`,
+        severity: 'error'
+      });
+      return;
+    }
+    switch (fileType) {
+      case 'poster': setPosterFile(file); break;
+      case 'hero': setHeroFile(file); break;
+      case 'video': setVideoFile(file); break;
+      default: break;
+    }
   };
 
   const handleUpload = async () => {
-    if (!validateForm()) return;
-
-    setUploading(true);
-    setUploadProgress(0);
-    setUploadStatus('Preparing upload...');
+    if (!videoFile || !contentForm.title || !contentForm.genre || !contentForm.releaseYear) {
+      setSnackbar({
+        open: true,
+        message: 'Video file, title, genre, and release year are required',
+        severity: 'error'
+      });
+      return;
+    }
 
     try {
-      // Create FormData for content upload
-      const formData = new FormData();
-      
-      // Add content metadata
-      formData.append('title', contentForm.title);
-      formData.append('description', contentForm.description);
-      formData.append('type', contentForm.type);
-      formData.append('genre', contentForm.genre);
-      formData.append('rating', contentForm.rating);
-      formData.append('releaseYear', contentForm.releaseYear);
-      formData.append('duration', contentForm.duration);
-      formData.append('is_featured', contentForm.is_featured);
+      setUploading(true);
+      setUploadProgress(0);
 
-      // Add media file
-      if (selectedFile) {
-        formData.append('file', selectedFile);
-      }
+      const videoFormData = new FormData();
+      videoFormData.append('movie', videoFile);
+      videoFormData.append('title', contentForm.title);
+      videoFormData.append('genre', contentForm.genre);
+      videoFormData.append('releaseYear', contentForm.releaseYear);
+      videoFormData.append('description', contentForm.description);
+      videoFormData.append('rating', contentForm.rating);
+      videoFormData.append('language', contentForm.language);
+      videoFormData.append('quality', contentForm.quality);
+      videoFormData.append('is_featured', contentForm.is_featured);
+      videoFormData.append('tags', contentForm.tags);
 
-      setUploadStatus('Uploading files...');
+      const videoResponse = await axios.post(
+        buildApiUrl(getEndpoint('AWS_MEDIA', 'UPLOAD_MOVIE')),
+        videoFormData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(progress);
+          }
+        }
+      );
 
-      // Upload to backend
-      const response = await axios.post(buildApiUrl(getEndpoint('MEDIA', 'UPLOAD_CONTENT')), formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setUploadProgress(percentCompleted);
-          setUploadStatus(`Uploading... ${percentCompleted}%`);
-        },
-      });
-
-      if (response.data.success) {
-        setUploadStatus('Processing content...');
-        
-        // Add uploaded content to the list
-        const newContent = response.data.data.title;
-        setContent(prev => [newContent, ...prev]);
-        
-        // Refresh the content list to get the latest data
-        fetchUploadedContent();
-
-        // Reset form
-        setSelectedFile(null);
-        setContentForm({
-          title: '',
-          description: '',
-          type: 'movie',
-          genre: '',
-          duration: '',
-          releaseYear: '',
-          rating: 'PG',
-          status: 'active',
-          is_featured: false
+      if (videoResponse.data.success) {
+        setSnackbar({
+          open: true,
+          message: 'Content uploaded successfully to AWS S3!',
+          severity: 'success'
         });
-        
-        setUploadStatus('Upload completed successfully!');
-        setTimeout(() => {
-          setUploadStatus('');
-        }, 3000);
-        
-        alert('Content uploaded successfully! It will now appear in your content library.');
-      } else {
-        throw new Error(response.data.message || 'Upload failed');
+        resetForm();
+        fetchUploadedContent();
+        fetchStorageStats();
       }
-
     } catch (error) {
-      console.error('Upload error:', error);
-      setUploadStatus(`Upload failed: ${error.response?.data?.message || error.message}`);
-      setTimeout(() => {
-        setUploadStatus('');
-      }, 5000);
+      console.error('❌ Upload error:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || error.message || 'Upload failed',
+        severity: 'error'
+      });
     } finally {
       setUploading(false);
       setUploadProgress(0);
     }
   };
 
-  const handleDeleteContent = async (id) => {
-    if (window.confirm('Are you sure you want to delete this content?')) {
-      try {
-        await axios.delete(buildApiUrl(getEndpoint('CONTENT', 'TITLE', { id })));
-        setContent(prev => prev.filter(content => content.id !== id));
-        alert('Content deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting content:', error);
-        alert(`Error deleting content: ${error.response?.data?.message || error.message}`);
-      }
+  const resetForm = () => {
+    setContentForm({
+      title: '', description: '', genre: '', releaseYear: '', duration: '',
+      rating: 'PG', language: 'English', quality: 'HD', is_featured: false, tags: ''
+    });
+    setPosterFile(null); setHeroFile(null); setVideoFile(null);
+    if (posterFileRef.current) posterFileRef.current.value = '';
+    if (heroFileRef.current) heroFileRef.current.value = '';
+    if (videoFileRef.current) videoFileRef.current.value = '';
+  };
+
+  const handleDeleteContent = async (contentItem) => {
+    try {
+      await axios.delete(buildApiUrl(getEndpoint('CONTENT', 'DELETE', { id: contentItem.id })));
+      setSnackbar({ open: true, message: 'Content deleted successfully', severity: 'success' });
+      fetchUploadedContent();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Delete failed', severity: 'error' });
     }
   };
 
-  const handlePreview = (file) => {
-    // Simple file preview - you can enhance this later
-    if (file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file);
-      window.open(url, '_blank');
-    } else {
-      alert(`Preview not available for ${file.type} files`);
+  const handlePreview = (contentItem) => {
+    if (contentItem.video_url) {
+      window.open(contentItem.video_url, '_blank');
     }
   };
 
-  const formatFileSize = (bytes) => {
+  const getFileSizeDisplay = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -226,396 +241,245 @@ const MediaUpload = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (type) => {
-    switch (type) {
-      case 'poster':
-      case 'hero':
-        return <ImageIcon />;
-      case 'video':
-        return <VideoIcon />;
-      default:
-        return <UploadIcon />;
-    }
-  };
-
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !tokenVerified) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <Typography>Please log in to view media upload.</Typography>
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <CircularProgress />
+        <Typography variant="body1" sx={{ mt: 2 }}>Verifying authentication...</Typography>
       </Box>
     );
   }
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          Content Upload
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <CloudUploadIcon sx={{ color: '#dc2626' }} />
+          Media Upload & Management
         </Typography>
-        <Button
-          variant="contained"
-          onClick={handleUpload}
-          disabled={uploading || !contentForm.title.trim() || !selectedFile}
-          sx={{ background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)' }}
-        >
-          {uploading ? 'Uploading...' : 'Upload Content'}
-        </Button>
+        <Typography variant="body1" color="text.secondary">
+          Upload movies, series, and media content to AWS S3 cloud storage
+        </Typography>
       </Box>
 
-      {uploadStatus && (
-        <Alert 
-          severity={uploadStatus.includes('failed') ? 'error' : uploadStatus.includes('completed') ? 'success' : 'info'}
-          sx={{ mb: 3 }}
-        >
-          {uploadStatus}
-        </Alert>
-      )}
+      <Paper sx={{ p: 2, mb: 3, background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <StorageIcon color={awsConnectionStatus === 'connected' ? 'success' : 'error'} />
+          <Typography variant="h6">
+            AWS S3 Status: {awsConnectionStatus === 'connected' ? 'Connected' : 'Connection Error'}
+          </Typography>
+          {awsConnectionStatus === 'checking' && <CircularProgress size={20} />}
+        </Box>
+        {storageStats && (
+          <Box sx={{ mt: 2, display: 'flex', gap: 3 }}>
+            <Chip icon={<StorageIcon />} label={`Storage: ${storageStats.totalSize || 0} bytes`} color="primary" />
+            <Chip icon={<MovieIcon />} label={`Files: ${storageStats.fileCount || 0}`} color="secondary" />
+            <Chip icon={<ImageIcon />} label={`Images: ${storageStats.imageCount || 0}`} color="info" />
+          </Box>
+        )}
+      </Paper>
 
-      <Grid container spacing={3}>
-        {/* Content Configuration */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Content Details
-            </Typography>
-            
+      <Paper sx={{ p: 3, mb: 4, background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%)' }}>
+        <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>Upload New Content</Typography>
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth label="Title *" value={contentForm.title}
+              onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })}
+              required sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth label="Description" value={contentForm.description}
+              onChange={(e) => setContentForm({ ...contentForm, description: e.target.value })}
+              multiline rows={3} sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth label="Genre *" value={contentForm.genre}
+              onChange={(e) => setContentForm({ ...contentForm, genre: e.target.value })}
+              required sx={{ mb: 2 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth label="Release Year *" value={contentForm.releaseYear}
+              onChange={(e) => setContentForm({ ...contentForm, releaseYear: e.target.value })}
+              required sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth label="Duration (e.g., 2h 15m)" value={contentForm.duration}
+              onChange={(e) => setContentForm({ ...contentForm, duration: e.target.value })}
+              sx={{ mb: 2 }}
+            />
             <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Content Type</InputLabel>
-              <Select
-                value={contentForm.type}
-                label="Content Type"
-                onChange={(e) => setContentForm(prev => ({ ...prev, type: e.target.value }))}
-              >
-                <MenuItem value="movie">Movie</MenuItem>
-                <MenuItem value="series">Series</MenuItem>
-                <MenuItem value="short">Short</MenuItem>
-                <MenuItem value="trailer">Trailer</MenuItem>
+              <InputLabel>Rating</InputLabel>
+              <Select value={contentForm.rating} onChange={(e) => setContentForm({ ...contentForm, rating: e.target.value })} label="Rating">
+                <MenuItem value="G">G</MenuItem>
+                <MenuItem value="PG">PG</MenuItem>
+                <MenuItem value="PG-13">PG-13</MenuItem>
+                <MenuItem value="R">R</MenuItem>
+                <MenuItem value="TV-MA">TV-MA</MenuItem>
               </Select>
             </FormControl>
+          </Grid>
 
-            <TextField
-              label="Title *"
-              value={contentForm.title}
-              onChange={(e) => setContentForm(prev => ({ ...prev, title: e.target.value }))}
-              fullWidth
-              sx={{ mb: 2 }}
-              required
-            />
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Language</InputLabel>
+              <Select value={contentForm.language} onChange={(e) => setContentForm({ ...contentForm, language: e.target.value })} label="Language">
+                <MenuItem value="English">English</MenuItem>
+                <MenuItem value="Hindi">Hindi</MenuItem>
+                <MenuItem value="Spanish">Spanish</MenuItem>
+                <MenuItem value="French">French</MenuItem>
+                <MenuItem value="German">German</MenuItem>
+                <MenuItem value="Chinese">Chinese</MenuItem>
+                <MenuItem value="Japanese">Japanese</MenuItem>
+                <MenuItem value="Korean">Korean</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Quality</InputLabel>
+              <Select value={contentForm.quality} onChange={(e) => setContentForm({ ...contentForm, quality: e.target.value })} label="Quality">
+                <MenuItem value="SD">SD</MenuItem>
+                <MenuItem value="HD">HD</MenuItem>
+                <MenuItem value="Full HD">Full HD</MenuItem>
+                <MenuItem value="4K">4K</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
 
-            <TextField
-              label="Description"
-              value={contentForm.description}
-              onChange={(e) => setContentForm(prev => ({ ...prev, description: e.target.value }))}
-              fullWidth
-              multiline
-              rows={3}
-              sx={{ mb: 2 }}
-            />
-
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  label="Genre"
-                  value={contentForm.genre}
-                  onChange={(e) => setContentForm(prev => ({ ...prev, genre: e.target.value }))}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Rating</InputLabel>
-                  <Select
-                    value={contentForm.rating}
-                    label="Rating"
-                    onChange={(e) => setContentForm(prev => ({ ...prev, rating: e.target.value }))}
-                  >
-                    <MenuItem value="G">G</MenuItem>
-                    <MenuItem value="PG">PG</MenuItem>
-                    <MenuItem value="PG-13">PG-13</MenuItem>
-                    <MenuItem value="R">R</MenuItem>
-                    <MenuItem value="TV-MA">TV-MA</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-
-            <Grid container spacing={2} sx={{ mt: 2 }}>
-              <Grid item xs={6}>
-                <TextField
-                  label="Release Year"
-                  value={contentForm.releaseYear}
-                  onChange={(e) => setContentForm(prev => ({ ...prev, releaseYear: e.target.value }))}
-                  fullWidth
-                  type="number"
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Duration"
-                  value={contentForm.duration}
-                  onChange={(e) => setContentForm(prev => ({ ...prev, duration: e.target.value }))}
-                  fullWidth
-                  placeholder="e.g., 2h 15m"
-                />
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-
-        {/* Media Upload */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Media Files
-            </Typography>
+          <Grid item xs={12} md={6}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>Media Files</Typography>
             
-            <Grid container spacing={3}>
-              {/* Poster Upload */}
-              <Grid item xs={12} md={4}>
-                <Card sx={{ 
-                  border: selectedFile && selectedFile.type.startsWith('image/') ? '2px solid #4caf50' : '2px dashed rgba(255,255,255,0.3)',
-                  background: selectedFile && selectedFile.type.startsWith('image/') ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
-                  cursor: 'pointer',
-                  '&:hover': { borderColor: '#4caf50' }
-                }} onClick={() => posterInputRef.current?.click()}>
-                  <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                    {selectedFile && selectedFile.type.startsWith('image/') ? (
-                      <>
-                        <CheckIcon sx={{ fontSize: 40, color: '#4caf50', mb: 1 }} />
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {selectedFile.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatFileSize(selectedFile.size)}
-                        </Typography>
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          Click to select poster
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Recommended: 300x450px
-                        </Typography>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-                <input
-                  ref={posterInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileSelect(e)}
-                  style={{ display: 'none' }}
-                />
-              </Grid>
+            <Box sx={{ mb: 2 }}>
+              <input type="file" ref={videoFileRef} accept="video/*" onChange={(e) => handleFileSelect('video', e.target.files[0])} style={{ display: 'none' }} />
+              <Button variant="outlined" startIcon={<VideoFileIcon />} onClick={() => videoFileRef.current?.click()} fullWidth sx={{ mb: 1 }}>
+                {videoFile ? videoFile.name : 'Select Video File *'}
+              </Button>
+              {videoFile && <Typography variant="caption" color="text.secondary">Size: {getFileSizeDisplay(videoFile.size)}</Typography>}
+            </Box>
 
-              {/* Hero Upload */}
-              <Grid item xs={12} md={4}>
-                <Card sx={{ 
-                  border: selectedFile && selectedFile.type.startsWith('image/') ? '2px solid #2196f3' : '2px dashed rgba(255,255,255,0.3)',
-                  background: selectedFile && selectedFile.type.startsWith('image/') ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
-                  cursor: 'pointer',
-                  '&:hover': { borderColor: '#2196f3' }
-                }} onClick={() => heroInputRef.current?.click()}>
-                  <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                    {selectedFile && selectedFile.type.startsWith('image/') ? (
-                      <>
-                        <CheckIcon sx={{ fontSize: 40, color: '#2196f3', mb: 1 }} />
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {selectedFile.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatFileSize(selectedFile.size)}
-                        </Typography>
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          Click to select hero
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Recommended: 1920x1080px
-                        </Typography>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-                <input
-                  ref={heroInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileSelect(e)}
-                  style={{ display: 'none' }}
-                />
-              </Grid>
+            <Box sx={{ mb: 2 }}>
+              <input type="file" ref={posterFileRef} accept="image/*" onChange={(e) => handleFileSelect('poster', e.target.files[0])} style={{ display: 'none' }} />
+              <Button variant="outlined" startIcon={<ImageIcon />} onClick={() => posterFileRef.current?.click()} fullWidth sx={{ mb: 1 }}>
+                {posterFile ? posterFile.name : 'Select Poster Image'}
+              </Button>
+              {posterFile && <Typography variant="caption" color="text.secondary">Size: {getFileSizeDisplay(posterFile.size)}</Typography>}
+            </Box>
 
-              {/* Video Upload */}
-              <Grid item xs={12} md={4}>
-                <Card sx={{ 
-                  border: selectedFile && selectedFile.type.startsWith('video/') ? '2px solid #ff9800' : '2px dashed rgba(255,255,255,0.3)',
-                  background: selectedFile && selectedFile.type.startsWith('video/') ? 'rgba(255, 152, 0, 0.1)' : 'transparent',
-                  cursor: 'pointer',
-                  '&:hover': { borderColor: '#ff9800' }
-                }} onClick={() => videoInputRef.current?.click()}>
-                  <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                    {selectedFile && selectedFile.type.startsWith('video/') ? (
-                      <>
-                        <CheckIcon sx={{ fontSize: 40, color: '#ff9800', mb: 1 }} />
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {selectedFile.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatFileSize(selectedFile.size)}
-                        </Typography>
-                      </>
-                    ) : (
-                      <>
-                        <VideoIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          Click to select video
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          MP4, AVI, MOV, etc.
-                        </Typography>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => handleFileSelect(e)}
-                  style={{ display: 'none' }}
-                />
-              </Grid>
-            </Grid>
+            <Box sx={{ mb: 2 }}>
+              <input type="file" ref={heroFileRef} accept="image/*" onChange={(e) => handleFileSelect('hero', e.target.files[0])} style={{ display: 'none' }} />
+              <Button variant="outlined" startIcon={<ImageIcon />} onClick={() => heroFileRef.current?.click()} fullWidth sx={{ mb: 1 }}>
+                {heroFile ? heroFile.name : 'Select Hero Image'}
+              </Button>
+              {heroFile && <Typography variant="caption" color="text.secondary">Size: {getFileSizeDisplay(heroFile.size)}</Typography>}
+            </Box>
+          </Grid>
 
-            {uploading && (
-              <Box sx={{ mt: 3 }}>
-                <LinearProgress variant="determinate" value={uploadProgress} />
-                <Typography variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
-                  {uploadProgress}% Complete
-                </Typography>
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={<Switch checked={contentForm.is_featured} onChange={(e) => setContentForm({ ...contentForm, is_featured: e.target.checked })} />}
+              label="Mark as Featured Content"
+            />
+          </Grid>
+
+          {uploading && (
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <CircularProgress size={20} />
+                <Typography variant="body2">Uploading to AWS S3...</Typography>
               </Box>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+              <LinearProgress variant="determinate" value={uploadProgress} sx={{ mt: 1, height: 8, borderRadius: 4 }} />
+            </Grid>
+          )}
 
-      {/* Uploaded Content */}
-      {content.length > 0 && (
-        <Paper sx={{ p: 3, mt: 3, background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            Uploaded Content ({content.length})
-          </Typography>
-          
-          <Grid container spacing={2}>
-            {content.map((item) => (
-              <Grid item xs={12} sm={6} md={4} key={item.id}>
-                <Card sx={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Chip
-                        label={item.type}
-                        size="small"
-                        color="primary"
-                      />
-                      <Chip
-                        label={item.status}
-                        size="small"
-                        color={item.status === 'active' ? 'success' : 'default'}
-                      />
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button variant="contained" onClick={handleUpload} disabled={uploading || !videoFile} startIcon={<CloudUploadIcon />} sx={{ px: 4, py: 1.5 }}>
+                {uploading ? 'Uploading...' : 'Upload to AWS S3'}
+              </Button>
+              <Button variant="outlined" onClick={resetForm} disabled={uploading}>Reset Form</Button>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      <Paper sx={{ p: 3, background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600 }}>Uploaded Content</Typography>
+          <Button variant="outlined" onClick={fetchUploadedContent} disabled={loading} startIcon={<RefreshIcon />}>Refresh</Button>
+        </Box>
+
+        {loading ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <CircularProgress />
+            <Typography variant="body1" sx={{ mt: 2 }}>Loading content...</Typography>
+          </Box>
+        ) : uploadedContent.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body1" color="text.secondary">No content uploaded yet. Start by uploading your first movie!</Typography>
+          </Box>
+        ) : (
+          <Grid container spacing={3}>
+            {uploadedContent.map((content) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={content.id}>
+                <Card sx={{ height: '100%', position: 'relative' }}>
+                  <CardMedia component="img" height="200" image={content.poster_url || '/placeholder-poster.jpg'} alt={content.title} sx={{ objectFit: 'cover' }} />
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>{content.title}</Typography>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                      <Chip label={content.type || 'movie'} size="small" color="primary" />
+                      {content.genre && <Chip label={content.genre} size="small" color="secondary" />}
+                      <Chip label={content.status || 'active'} size="small" color="success" />
                     </Box>
                     
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                      {item.title}
-                    </Typography>
+                    {content.year && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                        Year: {content.year}
+                      </Typography>
+                    )}
                     
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {item.description || 'No description'}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      {item.genre?.split(',').map((genre, index) => (
-                        <Chip key={index} label={genre.trim()} size="small" />
-                      ))}
-                      <Chip label={item.rating} size="small" color="warning" />
-                    </Box>
-                    
-                    <Typography variant="caption" color="text.secondary">
-                      {item.releaseYear} • {item.duration ? Math.floor(item.duration / 60) + 'm' : 'N/A'}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handlePreview(item)}
-                        color="primary"
-                      >
-                        <PlayIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteContent(item.id)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between' }}>
+                      <Tooltip title="Preview">
+                        <IconButton size="small" onClick={() => handlePreview(content)} color="primary">
+                          <PlayIcon />
+                        </IconButton>
+                      </Tooltip>
+                      
+                      <Tooltip title="Delete">
+                        <IconButton size="small" onClick={() => { setContentToDelete(content); setDeleteDialogOpen(true); }} color="error">
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
             ))}
           </Grid>
-        </Paper>
-      )}
+        )}
+      </Paper>
 
-      {/* Preview Dialog */}
-      <Dialog
-        open={false} // Preview functionality removed
-        onClose={() => {}}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          Preview: {selectedFile?.name}
-        </DialogTitle>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            {selectedFile && selectedFile.type.startsWith('image/') ? (
-              <img
-                src={URL.createObjectURL(selectedFile)}
-                alt={selectedFile.name}
-                style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain' }}
-              />
-            ) : (
-              <>
-                <PlayIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-                <Typography variant="body1">
-                  Preview not available
-                </Typography>
-              </>
-            )}
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              {selectedFile?.name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {/* No synopsis available in current state */}
-            </Typography>
-          </Box>
+          <Typography>Are you sure you want to delete "{contentToDelete?.title}"? This action cannot be undone.</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {}}>
-            Close
-          </Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => { handleDeleteContent(contentToDelete); setDeleteDialogOpen(false); }} color="error" variant="contained">Delete</Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
 
 export default MediaUpload;
+

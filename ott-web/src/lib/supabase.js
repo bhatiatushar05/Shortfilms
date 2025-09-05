@@ -6,14 +6,14 @@ const supabaseConfig = config.supabase
 
 // Validate configuration
 if (!supabaseConfig.url || !supabaseConfig.anonKey) {
-  const error = new Error('Missing Supabase environment variables')
-  console.error('❌ Supabase configuration error:', error.message)
+  console.error('❌ Supabase configuration error: Missing environment variables')
   console.error('Required variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY')
   console.error('Please check your .env.local file')
+  console.error('Current values:', { url: supabaseConfig.url, anonKey: supabaseConfig.anonKey })
   
-  // In development, throw error to prevent silent failures
+  // In development, show warning but continue
   if (config.app.isDevelopment) {
-    throw error
+    console.warn('⚠️ Continuing without Supabase configuration - authentication will not work')
   }
   
   // In production, create a fallback client with warnings
@@ -69,14 +69,13 @@ async function testConnection() {
   }
 }
 
-// Enhanced error handling for auth state changes
+// Simple auth state change handler
 supabase.auth.onAuthStateChange((event, session) => {
   try {
-    if (event === 'SIGNED_OUT') {
-      // Clear all stored data when signed out
-      clearAllStorage()
-    } else if (event === 'SIGNED_IN') {
+    if (event === 'SIGNED_IN') {
       console.log('✅ User signed in successfully')
+    } else if (event === 'SIGNED_OUT') {
+      console.log('✅ User signed out successfully')
     } else if (event === 'TOKEN_REFRESHED') {
       console.log('🔄 Token refreshed successfully')
     }
@@ -84,62 +83,6 @@ supabase.auth.onAuthStateChange((event, session) => {
     console.error('❌ Auth state change error:', error)
   }
 })
-
-// Enhanced storage clearing function
-function clearAllStorage() {
-  try {
-    // Clear localStorage
-    Object.keys(localStorage).forEach(key => {
-      if (key.includes('supabase') || key.includes('auth') || key.includes('ott')) {
-        localStorage.removeItem(key)
-      }
-    })
-    
-    // Clear sessionStorage
-    sessionStorage.clear()
-    
-    // Clear any other auth-related storage
-    if (typeof window !== 'undefined') {
-      // Clear cookies if they exist
-      document.cookie.split(';').forEach(cookie => {
-        const [name] = cookie.split('=')
-        if (name.trim().includes('auth') || name.trim().includes('supabase')) {
-          document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
-        }
-      })
-    }
-    
-    console.log('🧹 Storage cleared successfully')
-  } catch (error) {
-    console.warn('⚠️ Storage clearing error:', error)
-  }
-}
-
-// Enhanced signOut method with better error handling
-const originalSignOut = supabase.auth.signOut
-supabase.auth.signOut = async () => {
-  try {
-    // Clear storage before sign out
-    clearAllStorage()
-    
-    // Perform sign out
-    const result = await originalSignOut()
-    
-    // Clear storage again after sign out
-    clearAllStorage()
-    
-    console.log('✅ Sign out completed successfully')
-    return result
-  } catch (error) {
-    console.error('❌ Sign out error:', error)
-    
-    // Even if sign out fails, clear local data
-    clearAllStorage()
-    
-    // Return success to prevent error propagation
-    return { error: null }
-  }
-}
 
 // Export the enhanced client
 export { supabase }

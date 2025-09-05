@@ -10,6 +10,7 @@ export const API_CONFIG = {
       LOGIN: '/auth/login',
       LOGOUT: '/auth/logout',
       REFRESH: '/auth/refresh',
+      VERIFY: '/auth/verify', // Added missing VERIFY endpoint
     },
     
     // Users
@@ -26,6 +27,9 @@ export const API_CONFIG = {
     CONTENT: {
       TITLES: '/content/titles',
       TITLE: (id) => `/content/titles/${id}`,
+      CREATE: '/content/titles',
+      UPDATE: (id) => `/content/titles/${id}`,
+      DELETE: (id) => `/content/titles/${id}`,
     },
     
     // Analytics
@@ -37,7 +41,19 @@ export const API_CONFIG = {
       TIMELINE: '/analytics/timeline',
     },
     
-    // Media
+    // AWS S3 Media (Updated for proper integration)
+    AWS_MEDIA: {
+      UPLOAD_MOVIE: '/aws-media/upload-movie',
+      UPLOAD_THUMBNAIL: '/aws-media/upload-thumbnail',
+      UPLOAD_EPISODE: '/aws-media/upload-episode',
+      LIST_FILES: '/aws-media/list-files',
+      DELETE_FILE: (key) => `/aws-media/delete-file/${key}`,
+      STORAGE_STATS: '/aws-media/storage-stats',
+      TEST_CONNECTION: '/aws-media/test-connection',
+      CREATE_BUCKET: '/aws-media/create-bucket',
+    },
+    
+    // Legacy Media (for backward compatibility)
     MEDIA: {
       UPLOAD_VIDEO: '/media/upload/video',
       UPLOAD_IMAGE: '/media/upload/image',
@@ -82,6 +98,12 @@ export const getEndpoint = (category, action, params = {}) => {
       return endpoint(params.id);
     } else if (action === 'PREFERENCES' && params.id) {
       return endpoint(params.id);
+    } else if (action === 'UPDATE' && params.id) {
+      return endpoint(params.id);
+    } else if (action === 'DELETE' && params.id) {
+      return endpoint(params.id);
+    } else if (action === 'DELETE_FILE' && params.key) {
+      return endpoint(params.key);
     } else {
       // For other functions, pass the params object
       return endpoint(params);

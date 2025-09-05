@@ -46,19 +46,41 @@ const MySpace = () => {
       if (!user?.id) return
       
       try {
+        // Check user status from user_controls table (the ONLY table we need)
         const { data, error } = await supabase
-          .from('profiles')
-          .select('status, subscription, created_at')
-          .eq('id', user.id)
-          .single()
+          .from('user_controls')
+          .select('status, can_access, suspension_reason, email, access_level')
+          .eq('email', user.email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
 
-        if (error) {
-          console.error('Error fetching user profile:', error)
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching user controls:', error)
           return
         }
 
-        setUserProfile(data)
-        console.log('User profile loaded:', data)
+        // If user not found in user_controls, create a default active profile
+        if (!data) {
+          setUserProfile({
+            status: 'active',
+            subscription: 'premium',
+            created_at: new Date().toISOString()
+          })
+          console.log('User not found in user_controls, defaulting to active status')
+        } else {
+          // Map user_controls data to match expected profile structure
+          const profileData = {
+            status: data.status || 'active',
+            subscription: 'premium', // Default subscription
+            created_at: data.created_at || new Date().toISOString(),
+            suspension_reason: data.suspension_reason,
+            can_access: data.can_access,
+            access_level: data.access_level
+          }
+          setUserProfile(profileData)
+          console.log('User profile loaded from user_controls:', profileData)
+        }
       } catch (err) {
         console.error('Error in fetchUserProfile:', err)
       }
@@ -141,13 +163,13 @@ const MySpace = () => {
         console.log('🔍 Navigating to /login...');
         // Add a flag to indicate this is a suspended user trying to sign in again
         sessionStorage.setItem('suspended-user-signin', 'true')
-        window.location.href = '/login'
+        navigate('/login', { replace: true })
         
       } catch (error) {
         console.error('❌ Error during sign out:', error)
         // Even if sign out fails, try to navigate to login
         console.log('🔍 Attempting navigation despite sign out error...');
-        window.location.href = '/login'
+        navigate('/login', { replace: true })
       }
     }
 
@@ -292,7 +314,7 @@ const MySpace = () => {
   const handleSubscribe = async (planId) => {
     if (!isAuthed) {
       // Redirect to login
-      window.location.href = '/login'
+      navigate('/login', { replace: true })
       return
     }
     

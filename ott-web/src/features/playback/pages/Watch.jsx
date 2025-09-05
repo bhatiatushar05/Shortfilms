@@ -99,6 +99,7 @@ const Watch = () => {
   const runtimeSeconds = title.runtime_sec || title.runtimeSec
   const seasonCount = title.season_count || title.seasonCount
   const playbackUrl = title.playback_url || title.playbackUrl
+  const fallbackVideoUrl = title.fallback_video_url || null
 
   // Handle progress updates
   const handleProgress = (currentTime, duration) => {
@@ -150,6 +151,7 @@ const Watch = () => {
                 autoPlay={true}
                 autoFullscreen={shouldAutoFullscreen}
                 onClick={handleVideoClick}
+                fallbackSrc={fallbackVideoUrl}
               />
             </div>
 

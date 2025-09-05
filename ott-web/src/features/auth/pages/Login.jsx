@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, Play, AlertCircle, QrCode, Smartphone } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, Play, AlertCircle, QrCode, Smartphone, Ban } from 'lucide-react'
 import { useAuth } from '../../../hooks/useAuth'
 import { useSession } from '../../../hooks/useSession'
 import QRCodeLogin from '../../../components/auth/QRCodeLogin'
@@ -18,41 +18,37 @@ const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Redirect if already authenticated, but allow suspended users to stay
-  useEffect(() => {
-    if (isAuthed) {
-      // Check if this is a suspended user trying to sign in again
-      const isSuspendedUserSignin = sessionStorage.getItem('suspended-user-signin')
-      
-      if (isSuspendedUserSignin) {
-        // Clear the flag and allow them to stay on login page
-        sessionStorage.removeItem('suspended-user-signin')
-        console.log('🔍 Suspended user allowed to stay on login page')
-        return
-      }
-      
-      const from = location.state?.from?.pathname || '/'
-      navigate(from, { replace: true })
-    }
-  }, [isAuthed, navigate, location])
+  // DISABLED: No automatic redirects on login page to prevent loops
+  // User must manually submit login form
+  // useEffect(() => {
+  //   // Disabled to prevent redirect loops
+  // }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     clearError()
 
+    console.log('🔍 Login form submitted for:', email)
     const success = await login(email, password)
+    console.log('🔍 Login result:', success)
+    
     if (success) {
-      const from = location.state?.from?.pathname || '/'
-      navigate(from, { replace: true })
+      console.log('✅ Login successful, navigating to home page')
+      navigate('/', { replace: true })
+    } else {
+      console.log('❌ Login failed, staying on login page. Error:', error)
+      // If login fails (e.g., user is suspended), stay on login page
+      // The error message will be displayed below
     }
   }
 
   const handleLoginSuccess = () => {
-    const from = location.state?.from?.pathname || '/'
-    navigate(from, { replace: true })
+    console.log('✅ QR Login successful, navigating to home page')
+    navigate('/', { replace: true })
   }
 
   const isEmailNotConfirmed = error?.includes('Email not confirmed') || error?.includes('email not confirmed')
+  const isAccessDenied = error?.includes('Access Denied') || error?.includes('suspended')
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
@@ -72,7 +68,7 @@ const Login = () => {
         />
       </div>
       
-             <div className="max-w-md w-full relative z-10 mt-24">
+      <div className="max-w-md w-full relative z-10 mt-24">
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: -30, scale: 0.9 }}
@@ -142,178 +138,193 @@ const Login = () => {
 
         {/* Login Form */}
         <AnimatePresence mode="wait">
-          {loginMethod === 'email' && (
+          {loginMethod === 'email' ? (
             <motion.div
-              key="email"
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              key="email-form"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -40, scale: 0.95 }}
-              transition={{ duration: 0.96, ease: "easeOut", delay: 0.48 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.4 }}
               className="bg-red-500/5 backdrop-blur-xl rounded-3xl p-6 border border-red-500/15 shadow-2xl"
             >
               <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.64, delay: 0.64 }}
-            >
-              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black z-10" />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="w-full pl-12 pr-4 py-3 bg-red-500/10 border border-red-500/25 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/40 focus:bg-red-500/15 backdrop-blur-sm transition-all duration-240 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="Enter your email"
-                />
-              </div>
-            </motion.div>
-
-            {/* Password Field */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.64, delay: 0.8 }}
-            >
-              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black z-10" />
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="w-full pl-12 pr-12 py-3 bg-red-500/10 border border-red-500/25 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/40 focus:bg-red-500/15 backdrop-blur-sm transition-all duration-240 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-black hover:text-gray-700 transition-colors duration-240 disabled:opacity-50 z-10"
+                {/* Email Field */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.64, delay: 0.64 }}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </motion.div>
+                  <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black z-10" />
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                      autoComplete="email"
+                      className="w-full pl-12 pr-4 py-3 bg-red-500/10 border border-red-500/25 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/40 focus:bg-red-500/15 backdrop-blur-sm transition-all duration-240 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                </motion.div>
 
-            {/* Error Message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`text-sm text-center rounded-lg p-3 ${
-                  isEmailNotConfirmed 
-                    ? 'bg-yellow-900/20 border border-yellow-800 text-yellow-300' 
-                    : 'bg-red-900/20 border border-red-800 text-red-400'
-                }`}
+                {/* Password Field */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.64, delay: 0.8 }}
+                >
+                  <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black z-10" />
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      autoComplete="current-password"
+                      className="w-full pl-12 pr-12 py-3 bg-red-500/10 border border-red-500/25 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/40 focus:bg-red-500/15 backdrop-blur-sm transition-all duration-240 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-black hover:text-gray-700 transition-colors duration-240 disabled:opacity-50 z-10"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </motion.div>
+
+                {/* Error Message */}
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`text-sm text-center rounded-lg p-4 ${
+                      isAccessDenied
+                        ? 'bg-red-900/30 border border-red-700 text-red-300' 
+                        : isEmailNotConfirmed 
+                          ? 'bg-yellow-900/20 border border-yellow-800 text-yellow-300' 
+                          : 'bg-red-900/20 border border-red-800 text-red-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center space-x-2 mb-3">
+                      {isAccessDenied ? (
+                        <Ban className="w-5 h-5 text-red-400" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
+                      <span className="font-medium">
+                        {isAccessDenied ? 'Access Denied' : isEmailNotConfirmed ? 'Email Not Confirmed' : 'Authentication Error'}
+                      </span>
+                    </div>
+                    
+                    {isAccessDenied ? (
+                      <div className="text-sm space-y-2">
+                        <p className="text-red-200">{error}</p>
+                        <div className="bg-red-800/20 rounded-lg p-3 text-xs border border-red-700/30">
+                          <p className="font-medium text-red-200 mb-2">What this means:</p>
+                          <ul className="space-y-1 text-red-300/80">
+                            <li>• Your account has been suspended by an administrator</li>
+                            <li>• You cannot access the platform until your account is reactivated</li>
+                            <li>• Please contact support for assistance</li>
+                          </ul>
+                        </div>
+                      </div>
+                    ) : isEmailNotConfirmed ? (
+                      <div className="text-sm">
+                        <p className="mb-2">Please check your email and click the confirmation link before signing in.</p>
+                        <div className="bg-yellow-800/20 rounded p-2 text-xs">
+                          <p><strong>Need help?</strong></p>
+                          <ul className="mt-1 space-y-1">
+                            <li>• Check your spam/junk folder</li>
+                            <li>• Make sure you're using the correct email</li>
+                            <li>• <button 
+                                onClick={() => navigate('/signup')}
+                                className="text-yellow-200 hover:text-yellow-100 underline"
+                              >
+                                Create a new account
+                              </button> if needed</li>
+                          </ul>
+                        </div>
+                      </div>
+                    ) : (
+                      <p>{error}</p>
+                    )}
+                  </motion.div>
+                )}
+
+                {/* Submit Button */}
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.64, delay: 0.96 }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255, 255, 255, 0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-red-500/20 to-red-500/10 hover:from-red-500/30 hover:to-red-500/20 disabled:from-red-500/10 disabled:to-red-500/5 text-white font-medium py-3 px-6 rounded-2xl backdrop-blur-sm border border-red-500/25 transition-all duration-240 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 focus:ring-offset-transparent disabled:cursor-not-allowed shadow-lg"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Signing in...
+                    </div>
+                  ) : (
+                    'Sign In'
+                  )}
+                </motion.button>
+              </form>
+
+              {/* Additional Links */}
+              <motion.div 
+                className="mt-6 text-center space-y-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.64, delay: 1.12 }}
               >
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="font-medium">
-                    {isEmailNotConfirmed ? 'Email Not Confirmed' : 'Authentication Error'}
+                <a href="#" className="block text-sm text-white/60 hover:text-white transition-colors duration-240">
+                  Forgot your password?
+                </a>
+                
+                <div>
+                  <span className="text-sm text-white/60">
+                    Don't have an account?{' '}
+                    <a href="/signup" className="text-white hover:text-white/80 font-medium transition-colors duration-240">
+                      Sign up
+                    </a>
                   </span>
                 </div>
                 
-                {isEmailNotConfirmed ? (
-                  <div className="text-sm">
-                    <p className="mb-2">Please check your email and click the confirmation link before signing in.</p>
-                    <div className="bg-yellow-800/20 rounded p-2 text-xs">
-                      <p><strong>Need help?</strong></p>
-                      <ul className="mt-1 space-y-1">
-                        <li>• Check your spam/junk folder</li>
-                        <li>• Make sure you're using the correct email</li>
-                        <li>• <button 
-                            onClick={() => navigate('/signup')}
-                            className="text-yellow-200 hover:text-yellow-100 underline"
-                          >
-                            Create a new account
-                          </button> if needed</li>
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  <p>{error}</p>
-                )}
+                <Link
+                  to="/qr-demo"
+                  className="inline-block text-sm text-white/70 hover:text-white transition-colors duration-240"
+                >
+                  Try QR Code Login Demo →
+                </Link>
               </motion.div>
-            )}
-
-            {/* Submit Button */}
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.64, delay: 0.96 }}
-              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255, 255, 255, 0.3)" }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-red-500/20 to-red-500/10 hover:from-red-500/30 hover:to-red-500/20 disabled:from-red-500/10 disabled:to-red-500/5 text-white font-medium py-3 px-6 rounded-2xl backdrop-blur-sm border border-red-500/25 transition-all duration-240 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 focus:ring-offset-transparent disabled:cursor-not-allowed shadow-lg"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Signing in...
-                </div>
-              ) : (
-                'Sign In'
-              )}
-            </motion.button>
-          </form>
-
-          {/* Additional Links */}
-          <motion.div 
-            className="mt-6 text-center space-y-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.64, delay: 1.12 }}
-          >
-            <a href="#" className="block text-sm text-white/60 hover:text-white transition-colors duration-240">
-              Forgot your password?
-            </a>
-            
-            <div>
-              <span className="text-sm text-white/60">
-                Don't have an account?{' '}
-                <a href="/signup" className="text-white hover:text-white/80 font-medium transition-colors duration-240">
-                  Sign up
-                </a>
-              </span>
-            </div>
-            
-            <Link
-              to="/qr-demo"
-              className="inline-block text-sm text-white/70 hover:text-white transition-colors duration-240"
-            >
-              Try QR Code Login Demo →
-            </Link>
-          </motion.div>
-        </motion.div>
-          )}
-
-          {/* QR Code Login Section */}
-          {loginMethod === 'qr' && (
+            </motion.div>
+          ) : (
             <motion.div
-              key="qr"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              key="qr-form"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.4 }}
+              className="bg-red-500/5 backdrop-blur-xl rounded-3xl p-6 border border-red-500/15 shadow-2xl"
             >
-              <QRCodeLogin 
-                onBack={() => setLoginMethod('email')}
-                onSuccess={handleLoginSuccess}
-              />
+              <QRCodeLogin onLoginSuccess={handleLoginSuccess} />
             </motion.div>
           )}
         </AnimatePresence>

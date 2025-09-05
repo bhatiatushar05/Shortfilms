@@ -1,22 +1,16 @@
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../../../lib/supabase'
+import mockMovieService from '../../../services/mockMovieService'
 import HeroSection from '../../../components/media/HeroSection'
 import ContentRow from '../../../components/media/ContentRow'
 import { SkeletonRow, SkeletonHero } from '../../../components/ui/Skeleton'
 
 const Home = () => {
-  // Fetch all titles directly from the database
+  // Fetch all titles from mock service (AWS S3 movies)
   const { data: titles, isLoading, error } = useQuery({
     queryKey: ['home-titles'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('titles')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      return data || []
+      return await mockMovieService.getMovies()
     },
     staleTime: 5 * 60 * 1000,
   })

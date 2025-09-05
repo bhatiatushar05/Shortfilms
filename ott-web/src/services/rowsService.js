@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import mockMovieService from './mockMovieService'
 import { ROW_KEYS } from '../api/endpoints'
 
 // Rows specification implementation
@@ -19,16 +19,17 @@ export class RowsService {
 
         switch (key) {
           case ROW_KEYS.POPULAR:
-            // TODO: Implement popularity score
+            // Get popular movies from mock service
             items = { items: await this.getPopularRow() }
             break
 
           case ROW_KEYS.TRENDING:
-            // TODO: Implement last 7 days view count
+            // Get trending movies from mock service
             items = { items: await this.getTrendingRow() }
             break
 
           case ROW_KEYS.NEW:
+            // Get new movies from mock service
             items = { items: await this.getNewRow() }
             break
 
@@ -62,93 +63,54 @@ export class RowsService {
       return rows
     } catch (error) {
       console.error('Error fetching rows:', error)
-      
-      // If it's a database schema issue, return empty rows instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return []
-      }
-      
       throw error
     }
   }
 
   /**
-   * Popular: sort by popularity score desc limit 24
-   * TODO: Implement popularity score field
-   * For now, fallback to rating
+   * Popular: sort by rating desc limit 24
    */
   async getPopularRow() {
     try {
-      const { data, error } = await supabase
-        .from('v_title_summary')
-        .select('*')
-        .order('rating', { ascending: false })
-        .limit(this.defaultLimit)
-
-      if (error) throw error
-      return data || []
+      const movies = await mockMovieService.getMovies()
+      // Sort by rating (alphabetical for now, you can implement proper rating later)
+      return movies
+        .sort((a, b) => (a.rating || '').localeCompare(b.rating || ''))
+        .slice(0, this.defaultLimit)
     } catch (error) {
       console.error('Error fetching popular row:', error)
-      
-      // If it's a database schema issue, return empty array instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return []
-      }
-      
       return []
     }
   }
 
   /**
-   * Trending: trending score desc limit 24
+   * Trending: sort by creation date desc limit 24
    */
   async getTrendingRow() {
     try {
-      const { data, error } = await supabase
-        .from('v_title_summary')
-        .select('*')
-        .order('created_at', { ascending: false })  // Fixed: changed from 'createdAt' to 'created_at'
-        .limit(this.defaultLimit)
-
-      if (error) throw error
-      return data || []
+      const movies = await mockMovieService.getMovies()
+      // Sort by creation date (newest first)
+      return movies
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, this.defaultLimit)
     } catch (error) {
       console.error('Error fetching trending row:', error)
-      
-      // If it's a database schema issue, return empty array instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return []
-      }
-      
       return []
     }
   }
 
   /**
-   * New: createdAt desc limit 24
+   * New: sort by creation date desc limit 24
    */
   async getNewRow() {
     try {
-      const { data, error } = await supabase
-        .from('v_title_summary')
-        .select('*')
-        .order('created_at', { ascending: false })  // Fixed: changed from 'createdAt' to 'created_at'
-        .limit(this.defaultLimit)
-
-      if (error) throw error
-      return data || []
+      const movies = await mockMovieService.getMovies()
+      // Sort by creation date (newest first)
+      return movies
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, this.defaultLimit)
     } catch (error) {
       console.error('Error fetching new row:', error)
-      
-      // If it's a database schema issue, return empty array instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return []
-      }
-      
       return []
     }
   }
@@ -186,28 +148,17 @@ export class RowsService {
   }
 
   /**
-   * Genre: filter by genre name createdAt desc limit 24
+   * Genre: filter by genre name creation date desc limit 24
    */
   async getGenreRow(genre) {
     try {
-      const { data, error } = await supabase
-        .from('v_title_summary')
-        .select('*')
-        .contains('genres', [genre])
-        .order('createdAt', { ascending: false })
-        .limit(this.defaultLimit)
-
-      if (error) throw error
-      return data || []
+      const movies = await mockMovieService.getMoviesByGenre(genre)
+      // Sort by creation date (newest first)
+      return movies
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, this.defaultLimit)
     } catch (error) {
       console.error(`Error fetching genre row for ${genre}:`, error)
-      
-      // If it's a database schema issue, return empty array instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return []
-      }
-      
       return []
     }
   }
@@ -237,26 +188,13 @@ export class RowsService {
    */
   async getAvailableGenres() {
     try {
-      const { data, error } = await supabase
-        .from('titles')
-        .select('genres')
-
-      if (error) throw error
-
-      // Extract unique genres from all titles
-      const allGenres = data?.flatMap(title => title.genres || []) || []
+      const movies = await mockMovieService.getMovies()
+      // Extract unique genres from all movies
+      const allGenres = movies.flatMap(movie => movie.genres || [])
       const uniqueGenres = [...new Set(allGenres)].sort()
-
       return uniqueGenres
     } catch (error) {
       console.error('Error fetching available genres:', error)
-      
-      // If it's a database schema issue, return empty array instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return []
-      }
-      
       return []
     }
   }
@@ -272,55 +210,44 @@ export class RowsService {
         filters = {}
       } = options
 
-      let supabaseQuery = supabase
-        .from('v_title_summary')
-        .select('*')
+      let movies = await mockMovieService.getMovies()
 
       // Apply filters
       if (filters.genre) {
-        supabaseQuery = supabaseQuery.contains('genres', [filters.genre])
+        movies = movies.filter(movie => 
+          movie.genres.some(g => g.toLowerCase().includes(filters.genre.toLowerCase()))
+        )
       }
 
       if (filters.year) {
-        supabaseQuery = supabaseQuery.eq('year', filters.year)
+        movies = movies.filter(movie => movie.year === parseInt(filters.year))
       }
 
       if (filters.kind) {
-        supabaseQuery = supabaseQuery.eq('kind', filters.kind)
+        movies = movies.filter(movie => movie.kind === filters.kind)
       }
 
       // Apply sorting
       switch (sort) {
         case 'trending':
-          // TODO: Implement popularity score
-          supabaseQuery = supabaseQuery.order('created_at', { ascending: false })
+          // Sort by creation date (newest first)
+          movies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           break
         case 'top':
-          // TODO: Implement rating or editorial score
-          supabaseQuery = supabaseQuery.order('rating', { ascending: false })
+          // Sort by rating (alphabetical for now)
+          movies.sort((a, b) => (a.rating || '').localeCompare(b.rating || ''))
           break
         case 'new':
         default:
-          supabaseQuery = supabaseQuery.order('created_at', { ascending: false })
+          // Sort by creation date (newest first)
+          movies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           break
       }
 
       // Apply limit
-      supabaseQuery = supabaseQuery.limit(limit)
-
-      const { data, error } = await supabaseQuery
-
-      if (error) throw error
-      return data || []
+      return movies.slice(0, limit)
     } catch (error) {
       console.error('Error fetching custom row:', error)
-      
-      // If it's a database schema issue, return empty array instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return []
-      }
-      
       return []
     }
   }

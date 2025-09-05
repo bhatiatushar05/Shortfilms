@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import mockMovieService from './mockMovieService'
 
 // Search, sort, and pagination rules implementation
 export class CatalogService {
@@ -26,63 +26,56 @@ export class CatalogService {
     const offset = (page - 1) * finalPageSize
 
     try {
-      let query = supabase
-        .from('v_title_summary')
-        .select('*', { count: 'exact' })
+      // Get all movies from mock service
+      let movies = await mockMovieService.getMovies()
 
       // Apply search filter
       if (q && q !== 'all') {
-        // Search matches title, tags, and synopsis
-        // Note: In Supabase, we'll use full-text search on title for now
-        // For full implementation, you'd want to create a search vector
-        query = query.or(`title.ilike.%${q}%,synopsis.ilike.%${q}%`)
+        movies = await mockMovieService.searchMovies(q)
       }
 
       // Apply genre filter
       if (genre) {
-        query = query.contains('genres', [genre])
+        movies = movies.filter(movie => 
+          movie.genres.some(g => g.toLowerCase().includes(genre.toLowerCase()))
+        )
       }
 
       // Apply year filter
       if (year) {
-        query = query.eq('year', year)
+        movies = movies.filter(movie => movie.year === parseInt(year))
       }
 
       // Apply kind filter
       if (kind) {
-        query = query.eq('kind', kind)
+        movies = movies.filter(movie => movie.kind === kind)
       }
 
       // Apply sorting
       switch (sort) {
         case 'trending':
-          // TODO: Implement popularity score field
-          // For now, fallback to recent views (created_at)
-          query = query.order('created_at', { ascending: false })
+          // Sort by creation date (newest first)
+          movies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           break
         case 'top':
-          // TODO: Implement rating or editorial score
-          // For now, fallback to rating
-          query = query.order('rating', { ascending: false })
+          // Sort by rating (alphabetical for now)
+          movies.sort((a, b) => (a.rating || '').localeCompare(b.rating || ''))
           break
         case 'new':
         default:
-          query = query.order('created_at', { ascending: false })
+          // Sort by creation date (newest first)
+          movies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           break
       }
 
-      // Apply pagination
-      query = query.range(offset, offset + finalPageSize - 1)
-
-      const { data: items, count, error } = await query
-
-      if (error) throw error
-
-      const total = count || 0
+      const total = movies.length
       const hasMore = offset + finalPageSize < total
 
+      // Apply pagination
+      const paginatedMovies = movies.slice(offset, offset + finalPageSize)
+
       return {
-        items: items || [],
+        items: paginatedMovies,
         page,
         pageSize: finalPageSize,
         total,
@@ -90,19 +83,6 @@ export class CatalogService {
       }
     } catch (error) {
       console.error('Error fetching catalog:', error)
-      
-      // If it's a database schema issue, return empty catalog instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return {
-          items: [],
-          page,
-          pageSize: finalPageSize,
-          total: 0,
-          hasMore: false
-        }
-      }
-      
       throw error
     }
   }
@@ -112,50 +92,13 @@ export class CatalogService {
    */
   async getTitle(id) {
     try {
-      // Get title details
-      const { data: title, error: titleError } = await supabase
-        .from('titles')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (titleError) throw titleError
-
-      if (title.kind === 'series') {
-        // Get seasons with episodes
-        const { data: seasons, error: seasonsError } = await supabase
-          .from('seasons')
-          .select(`
-            *,
-            episodes:episodes(*)
-          `)
-          .eq('title_id', id)
-          .order('season_number', { ascending: true })
-
-        if (seasonsError) throw seasonsError
-
-        // Sort episodes within each season
-        seasons?.forEach(season => {
-          season.episodes?.sort((a, b) => a.episode_number - b.episode_number)
-        })
-
-        return {
-          ...title,
-          seasons: seasons || []
-        }
+      const title = await mockMovieService.getMovieById(id)
+      if (!title) {
+        throw new Error('Title not found')
       }
-
-      // For movies, return as is (already has runtimeSec and playbackUrl)
       return title
     } catch (error) {
       console.error('Error fetching title:', error)
-      
-      // If it's a database schema issue, return null instead of throwing
-      if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.warn('Database tables not set up yet. Please run the schema setup first.')
-        return null
-      }
-      
       throw error
     }
   }
@@ -172,12 +115,12 @@ export class CatalogService {
 
         switch (key) {
           case 'popular':
-            // TODO: Implement popularity score
+            // Get top rated movies
             items = await this.getCatalog({ sort: 'top', pageSize: 24 })
             break
 
           case 'trending':
-            // TODO: Implement last 7 days view count
+            // Get newest movies
             items = await this.getCatalog({ sort: 'new', pageSize: 24 })
             break
 

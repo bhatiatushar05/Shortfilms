@@ -285,7 +285,7 @@ const ContentManagement = () => {
           year: formData.releaseYear ? parseInt(formData.releaseYear) : null,
           rating: formData.rating || 'PG-13',
           is_featured: formData.is_featured || false,
-          is_featured: Boolean(formData.is_featured)
+          
         };
         
         // Log the transformation process

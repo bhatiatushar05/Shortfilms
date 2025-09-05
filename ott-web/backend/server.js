@@ -20,6 +20,7 @@ const adminControlRoutes = require('./routes/admin-control');
 const awsMediaRoutes = require('./routes/aws-media');
 const hybridPipelineRoutes = require('./routes/hybrid-pipeline');
 const healthRoutes = require('./routes/health');
+const ottAccessRoutes = require('./routes/ott-access');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -130,6 +131,7 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/admin', adminControlRoutes);
 app.use('/api/aws-media', awsMediaRoutes);
 app.use('/api/hybrid-pipeline', hybridPipelineRoutes);
+app.use('/api/ott-access', ottAccessRoutes);
 
 // Health check routes (new comprehensive system)
 app.use('/api/health', healthRoutes);

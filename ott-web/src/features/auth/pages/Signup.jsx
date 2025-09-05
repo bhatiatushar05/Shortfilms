@@ -215,18 +215,17 @@ const Signup = () => {
       if (user) {
         console.log('Signup: User found, saving profile...')
         
-        // Use UPSERT to handle existing profiles
+        // Use UPSERT to handle existing profiles in user_controls table
         const { error } = await supabase
-          .from('profiles')
+          .from('user_controls')
           .upsert({
-            id: user.id,
-            display_name: profile.displayName,
-            avatar_id: profile.avatar.id,
-            avatar_image: profile.avatar.image,
-            avatar_gradient: profile.avatar.gradient,
+            email: user.email,
+            status: 'active',
+            can_access: true,
+            access_level: 'full',
             updated_at: new Date().toISOString()
           }, {
-            onConflict: 'id' // This tells Supabase to UPDATE if ID exists
+            onConflict: 'email' // This tells Supabase to UPDATE if email exists
           })
 
         if (error) {
@@ -237,15 +236,14 @@ const Signup = () => {
             alert('Profile already exists. Updating...')
             // Try to update instead
             const { error: updateError } = await supabase
-              .from('profiles')
+              .from('user_controls')
               .update({
-                display_name: profile.displayName,
-                avatar_id: profile.avatar.id,
-                avatar_image: profile.avatar.image,
-                avatar_gradient: profile.avatar.gradient,
+                status: 'active',
+                can_access: true,
+                access_level: 'full',
                 updated_at: new Date().toISOString()
               })
-              .eq('id', user.id)
+              .eq('email', user.email)
             
             if (updateError) {
               alert('Error updating profile: ' + updateError.message)
@@ -288,16 +286,15 @@ const Signup = () => {
           console.log('Signup: Final signin successful, retrying profile creation...')
           // Retry the profile creation with the authenticated user
           const { error } = await supabase
-            .from('profiles')
+            .from('user_controls')
             .upsert({
-              id: signInData.user.id,
-              display_name: profile.displayName,
-              avatar_id: profile.avatar.id,
-              avatar_image: profile.avatar.image,
-              avatar_gradient: profile.avatar.gradient,
+              email: signInData.user.email,
+              status: 'active',
+              can_access: true,
+              access_level: 'full',
               updated_at: new Date().toISOString()
             }, {
-              onConflict: 'id'
+              onConflict: 'email'
             })
 
           if (error) {

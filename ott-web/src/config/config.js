@@ -11,6 +11,11 @@ const validateEnvironment = () => {
     VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
   };
 
+  console.log('🔍 Environment variables check:', {
+    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? 'SET' : 'MISSING',
+    VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'MISSING',
+  });
+
   const missingVars = Object.entries(requiredVars)
     .filter(([key, value]) => !value)
     .map(([key]) => key);
@@ -18,10 +23,12 @@ const validateEnvironment = () => {
   if (missingVars.length > 0) {
     console.error('❌ Missing required environment variables:', missingVars);
     console.error('Please check your .env.local file and ensure all required variables are set.');
+    console.error('Current values:', requiredVars);
     
     // In development, show helpful error
     if (import.meta.env.DEV) {
-      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+      console.warn('⚠️ Continuing without Supabase configuration - authentication will not work');
+      return false; // Don't throw error, just warn
     }
   }
 

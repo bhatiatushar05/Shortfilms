@@ -5,6 +5,7 @@ import {
   SkipBack, SkipForward, Settings, Fullscreen, RotateCcw
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
+import Hls from 'hls.js'
 
 const VideoPlayer = ({ 
   src, 
@@ -14,7 +15,8 @@ const VideoPlayer = ({
   onEnded, 
   className = '',
   autoPlay = false,
-  autoFullscreen = false 
+  autoFullscreen = false,
+  fallbackSrc = null
 }) => {
   const videoRef = useRef(null)
   const hlsRef = useRef(null)
@@ -149,6 +151,11 @@ const VideoPlayer = ({
           })
           videoRef.current.addEventListener('error', (e) => {
             console.error('Video error:', e)
+            console.error('Video error details:', {
+              error: e.target.error,
+              networkState: e.target.networkState,
+              readyState: e.target.readyState
+            })
             setError('Failed to load video file')
             setIsLoading(false)
           })
@@ -198,18 +205,43 @@ const VideoPlayer = ({
         }
 
         // Use HLS.js for other browsers
-        if (window.Hls && window.Hls.isSupported()) {
+        if (Hls.isSupported()) {
           console.log('Using HLS.js for:', src)
-          hlsRef.current = new window.Hls({
-            enableWorker: true,
-            lowLatencyMode: true,
-            backBufferLength: 90
-          })
+          try {
+            hlsRef.current = new Hls({
+              enableWorker: true,
+              lowLatencyMode: true,
+              backBufferLength: 90
+            })
+          } catch (hlsError) {
+            console.error('Failed to create HLS instance:', hlsError)
+            // Fallback to direct video playback
+            if (fallbackSrc) {
+              console.log('Using fallback video source after HLS creation failed:', fallbackSrc)
+              videoRef.current.src = fallbackSrc
+            } else {
+              videoRef.current.src = src
+            }
+            setIsLoading(false)
+            return
+          }
           
           hlsRef.current.loadSource(src)
           hlsRef.current.attachMedia(videoRef.current)
           
-          hlsRef.current.on(window.Hls.Events.MANIFEST_PARSED, () => {
+          // Add timeout for HLS loading
+          const hlsTimeout = setTimeout(() => {
+            console.warn('HLS loading timeout, falling back to direct video')
+            if (fallbackSrc) {
+              videoRef.current.src = fallbackSrc
+            } else {
+              videoRef.current.src = src
+            }
+            setIsLoading(false)
+          }, 10000) // 10 second timeout
+          
+          hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
+            clearTimeout(hlsTimeout) // Clear the timeout
             setIsLoading(false)
             if (autoPlay) {
               // Try autoplay but handle failure gracefully
@@ -245,17 +277,27 @@ const VideoPlayer = ({
             }
           })
           
-          hlsRef.current.on(window.Hls.Events.ERROR, (event, data) => {
+          hlsRef.current.on(Hls.Events.ERROR, (event, data) => {
             console.error('HLS Error:', data)
             // Try fallback to direct video playback
             console.log('HLS failed, trying direct video playback...')
-            videoRef.current.src = src
+            if (fallbackSrc) {
+              console.log('Using fallback video source:', fallbackSrc)
+              videoRef.current.src = fallbackSrc
+            } else {
+              videoRef.current.src = src
+            }
             setIsLoading(false)
           })
         } else {
           // HLS not supported, try direct video playback as fallback
           console.log('HLS not supported, trying direct video playback for:', src)
-          videoRef.current.src = src
+          if (fallbackSrc) {
+            console.log('Using fallback video source:', fallbackSrc)
+            videoRef.current.src = fallbackSrc
+          } else {
+            videoRef.current.src = src
+          }
           videoRef.current.addEventListener('loadedmetadata', () => {
             setIsLoading(false)
             if (autoPlay) {
@@ -289,6 +331,10 @@ const VideoPlayer = ({
       if (hlsRef.current) {
         hlsRef.current.destroy()
         hlsRef.current = null
+      }
+      // Clear any pending timeouts
+      if (typeof hlsTimeout !== 'undefined') {
+        clearTimeout(hlsTimeout)
       }
     }
   }, [src, autoPlay, hasUserInteracted, requestFullscreen])

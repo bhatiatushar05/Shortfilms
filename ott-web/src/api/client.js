@@ -38,7 +38,12 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access
       supabase.auth.signOut()
-      window.location.href = '/login'
+      // Avoid redirect loops on the login page
+      const isOnAuthPage = window.location.pathname === '/login' || window.location.pathname === '/signup'
+      if (!isOnAuthPage) {
+        window.history.pushState({}, '', '/login')
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      }
     }
     return Promise.reject(error)
   }

@@ -1,56 +1,34 @@
-import { loadStripe } from '@stripe/stripe-js'
+// Stripe completely disabled to prevent console errors
+// Uncomment and configure when ready to use Stripe
+// import { loadStripe } from '@stripe/stripe-js'
 
-// Initialize Stripe - replace with your actual publishable key
-// Disable analytics when they're blocked to prevent console errors
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here', {
-  // Remove apiVersion to prevent version errors
-  // This should help reduce analytics requests
-})
+// const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+const stripePromise = Promise.resolve(null)
 
 // Check if Stripe analytics requests are being blocked
 let analyticsBlocked = false
 const checkStripeAnalytics = () => {
-  try {
-    // Test if we can make a request to Stripe's analytics endpoint
-    const testUrl = 'https://r.stripe.com/b'
-    fetch(testUrl, { 
-      method: 'POST', 
-      mode: 'no-cors',
-      body: 'test'
-    }).then(() => {
-      analyticsBlocked = false
-      console.log('Stripe analytics working normally')
-    }).catch(() => {
-      analyticsBlocked = true
-      console.log('Stripe analytics requests are being blocked (likely by ad-blocker) - this is normal and won\'t affect functionality')
-    })
-  } catch (error) {
-    analyticsBlocked = true
-    console.log('Stripe analytics check failed - assuming blocked')
-  }
+  // Skip analytics check to prevent console errors
+  analyticsBlocked = true
+  console.log('Stripe analytics disabled to prevent console errors')
 }
 
 class StripeService {
   constructor() {
     this.stripe = null
     this.initialize()
-    // Check if Stripe analytics are being blocked
-    checkStripeAnalytics()
-    
-    // Block Stripe analytics requests if they're being blocked
-    if (typeof window !== 'undefined') {
-      this.blockStripeAnalytics()
-    }
+    // Skip analytics check to prevent console errors
+    analyticsBlocked = true
   }
 
   async initialize() {
     try {
       this.stripe = await stripePromise
       if (!this.stripe) {
-        console.error('Failed to load Stripe')
+        console.log('Stripe disabled - billing features unavailable')
       }
     } catch (error) {
-      console.error('Error initializing Stripe:', error)
+      console.log('Stripe disabled - billing features unavailable')
     }
   }
 
@@ -58,94 +36,32 @@ class StripeService {
    * Create a checkout session for subscription
    */
   async createCheckoutSession(planId, userId) {
-    try {
-      // This should call your backend API to create a Stripe checkout session
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          planId,
-          userId,
-          successUrl: `${window.location.origin}/my-space?success=true`,
-          cancelUrl: `${window.location.origin}/my-space?canceled=true`,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session')
-      }
-
-      const { sessionId } = await response.json()
-      return sessionId
-    } catch (error) {
-      console.error('Error creating checkout session:', error)
-      throw error
-    }
+    console.log('Stripe disabled - billing features unavailable')
+    throw new Error('Billing features are currently disabled')
   }
 
   /**
    * Redirect to Stripe checkout
    */
   async redirectToCheckout(sessionId) {
-    if (!this.stripe) {
-      throw new Error('Stripe not initialized')
-    }
-
-    try {
-      const { error } = await this.stripe.redirectToCheckout({
-        sessionId,
-      })
-
-      if (error) {
-        throw error
-      }
-    } catch (error) {
-      console.error('Error redirecting to checkout:', error)
-      throw error
-    }
+    console.log('Stripe disabled - billing features unavailable')
+    throw new Error('Billing features are currently disabled')
   }
 
   /**
    * Create a customer portal session for managing subscriptions
    */
   async createCustomerPortalSession(userId) {
-    try {
-      const response = await fetch('/api/stripe/create-portal-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          returnUrl: `${window.location.origin}/my-space`,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create portal session')
-      }
-
-      const { url } = await response.json()
-      return url
-    } catch (error) {
-      console.error('Error creating portal session:', error)
-      throw error
-    }
+    console.log('Stripe disabled - billing features unavailable')
+    throw new Error('Billing features are currently disabled')
   }
 
   /**
    * Redirect to customer portal
    */
   async redirectToCustomerPortal(userId) {
-    try {
-      const url = await this.createCustomerPortalSession(userId)
-      window.location.href = url
-    } catch (error) {
-      console.error('Error redirecting to customer portal:', error)
-      throw error
-    }
+    console.log('Stripe disabled - billing features unavailable')
+    throw new Error('Billing features are currently disabled')
   }
 
   /**
@@ -155,37 +71,7 @@ class StripeService {
     return analyticsBlocked
   }
 
-  /**
-   * Block Stripe analytics requests to prevent console errors
-   */
-  blockStripeAnalytics() {
-    try {
-      // Override fetch to block Stripe analytics requests
-      const originalFetch = window.fetch
-      window.fetch = function(url, options) {
-        if (typeof url === 'string' && url.includes('r.stripe.com')) {
-          console.log('Blocking Stripe analytics request to prevent console errors')
-          return Promise.resolve(new Response('', { status: 200 }))
-        }
-        return originalFetch.apply(this, arguments)
-      }
-      
-      // Also block XMLHttpRequest
-      const originalXHROpen = XMLHttpRequest.prototype.open
-      XMLHttpRequest.prototype.open = function(method, url, ...args) {
-        if (typeof url === 'string' && url.includes('r.stripe.com')) {
-          console.log('Blocking Stripe analytics XHR request to prevent console errors')
-          this.abort()
-          return
-        }
-        return originalXHROpen.apply(this, arguments)
-      }
-      
-      console.log('Stripe analytics requests are now blocked to prevent console errors')
-    } catch (error) {
-      console.log('Could not block Stripe analytics requests:', error)
-    }
-  }
+  // Removed blockStripeAnalytics method to prevent console errors
 
   /**
    * Get subscription status
