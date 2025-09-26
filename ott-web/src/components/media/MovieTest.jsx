@@ -44,21 +44,6 @@ const MovieTest = () => {
         hlsUrl="https://ott-movies-bucket-1.s3.us-east-1.amazonaws.com/movies/TearsOfSteel/hls/TearsOfSteel.m3u8"
         title="Tears of Steel"
       />
-
-      <MoviePlayer
-        hlsUrl="https://ott-movie-storage.s3.ap-south-1.amazonaws.com/movies/ForBiggerJoyrides/hls/ForBiggerJoyrides.m3u8"
-        title="For Bigger Joyrides"
-      />
-      
-      <MoviePlayer 
-        hlsUrl="https://ott-movie-storage.s3.ap-south-1.amazonaws.com/movies/VolkswagenGTIReview/hls/VolkswagenGTIReview.m3u8"
-        title="Volkswagen GTI Review"
-      />
-
-      <MoviePlayer
-        hlsUrl="https://ott-movie-storage.s3.ap-south-1.amazonaws.com/movies/SubaruOutbackOnStreetAndDirt/hls/SubaruOutbackOnStreetAndDirt.m3u8"
-        title="Subaru Outback: Street & Dirt"
-      />
     </div>
 
   );
